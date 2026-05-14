@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Temi VMS</string>
+    <string name="metadata_kiosk">com.robotemi.sdk.metadata.kiosk</string>
+
+    <string name="welcome_message">Welcome to Jarvis Technolabs</string>
+    <string name="scan_instruction">Please scan your QR code to check in</string>
+    <string name="validating">Validating your QR code, please wait...</string>
+    <string name="navigation_instruction">Please follow me to your destination</string>
+    <string name="arrived">We have arrived! Please take a seat.</string>
+    <string name="error_invalid_qr">Invalid QR code</string>
+    <string name="error_expired_qr">Your QR code has expired</string>
+    <string name="retry">Try Again</string>
+    <string name="call_help">Call for Help</string>
+</resources>

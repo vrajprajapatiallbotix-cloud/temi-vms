@@ -1,0 +1,37 @@
+module.exports = {
+  ROLES: {
+    ADMIN: 'admin',
+    EMPLOYEE: 'employee',
+    SECURITY: 'security',
+  },
+  VISIT_TYPES: {
+    PRE_PLANNED: 'pre_planned',
+    IMPROMPTU: 'impromptu',
+  },
+  VISIT_STATUS: {
+    PENDING: 'pending',
+    APPROVED: 'approved',
+    DECLINED: 'declined',
+    CHECKED_IN: 'checked_in',
+    COMPLETED: 'completed',
+    EXPIRED: 'expired',
+  },
+  NOTIFICATION_TYPES: {
+    VISIT_REQUEST: 'visit_request',
+    VISIT_APPROVED: 'visit_approved',
+    VISIT_DECLINED: 'visit_declined',
+    VISITOR_ARRIVED: 'visitor_arrived',
+    VISITOR_CHECKED_IN: 'visitor_checked_in',
+  },
+  QR_EXPIRY: {
+    PRE_PLANNED_HOURS: parseInt(process.env.QR_PREPLANNED_EXPIRY_HOURS) || 24,
+    IMPROMPTU_HOURS: parseInt(process.env.QR_IMPROMPTU_EXPIRY_HOURS) || 2,
+  },
+  SOCKET_EVENTS: {
+    VISIT_REQUEST: 'visit:request',
+    VISIT_APPROVED: 'visit:approved',
+    VISIT_DECLINED: 'visit:declined',
+    VISITOR_CHECKED_IN: 'visit:checked_in',
+    NOTIFICATION: 'notification',
+  },
+};

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a2e"
+    android:padding="40dp">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Error icon -->
+        <TextView
+            android:text="⚠"
+            android:textSize="72sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"/>
+
+        <TextView
+            android:id="@+id/tvErrorTitle"
+            android:text="Access Denied"
+            android:textSize="36sp"
+            android:textColor="#ef4444"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"/>
+
+        <TextView
+            android:id="@+id/tvErrorMessage"
+            android:text="Error message"
+            android:textSize="20sp"
+            android:textColor="#f87171"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"
+            android:gravity="center"/>
+
+        <TextView
+            android:id="@+id/tvErrorHelp"
+            android:text="Please ask for assistance at the security desk."
+            android:textSize="16sp"
+            android:textColor="#9ca3af"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:background="#2d2d5e"
+            android:padding="16dp"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="32dp"
+            android:gravity="center">
+
+            <Button
+                android:id="@+id/btnRetry"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:text="Try Again"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#4f46e5"
+                android:paddingHorizontal="28dp"
+                android:layout_marginEnd="12dp"/>
+
+            <Button
+                android:id="@+id/btnRequestAssistance"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:text="Call for Help"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#dc2626"
+                android:paddingHorizontal="28dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
