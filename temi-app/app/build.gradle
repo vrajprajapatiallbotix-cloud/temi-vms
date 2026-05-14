@@ -14,7 +14,7 @@ android {
         versionCode 1
         versionName "1.0.0"
 
-        buildConfigField "String", "VMS_API_BASE_URL", '"http://YOUR_SERVER_IP:5000/api"'
+        buildConfigField "String", "VMS_API_BASE_URL", '"https://congenial-eureka-r4qxq57xw55r3ww9r-5000.app.github.dev/api"'
         buildConfigField "String", "TEMI_SERIAL", '"00126040079"'
         buildConfigField "String", "TEMI_API_KEY", '"temi_internal_api_key"'
     }
