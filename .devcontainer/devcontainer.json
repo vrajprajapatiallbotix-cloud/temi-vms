@@ -1,14 +1,10 @@
 {
   "name": "Temi VMS",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/temi-vms",
 
-  "features": {
-    "ghcr.io/devcontainers/features/postgresql:1": {
-      "version": "15"
-    }
-  },
-
-  "postCreateCommand": "npm --prefix backend install && npm --prefix frontend install && bash .devcontainer/db-init.sh",
+  "postCreateCommand": "bash .devcontainer/init.sh",
 
   "forwardPorts": [5000, 5173],
   "portsAttributes": {
