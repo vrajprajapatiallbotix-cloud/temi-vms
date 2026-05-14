@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Load NVM so node/npm are available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
 echo "🚀 Starting Temi VMS..."
 
 # Ensure PostgreSQL is running

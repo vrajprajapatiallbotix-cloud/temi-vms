@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Load NVM so node/npm are available
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 echo "🔧 Setting up Temi VMS..."
 
 # ── PostgreSQL setup ──────────────────────────────────────────────────────────
