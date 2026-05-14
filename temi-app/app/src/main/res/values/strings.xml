@@ -3,7 +3,7 @@
     <string name="app_name">Temi VMS</string>
     <string name="metadata_kiosk">com.robotemi.sdk.metadata.kiosk</string>
 
-    <string name="welcome_message">Welcome to Jarvis Technolabs</string>
+    <string name="welcome_message">Welcome to Nanta Tech Limited</string>
     <string name="scan_instruction">Please scan your QR code to check in</string>
     <string name="validating">Validating your QR code, please wait...</string>
     <string name="navigation_instruction">Please follow me to your destination</string>

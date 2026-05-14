@@ -89,15 +89,16 @@ object TemiManager {
 
     fun startDetection() {
         try {
-            robot.startDetectionWithDistance(1)  // 1 meter detection range
-            Log.d(TAG, "Person detection started")
+            // Detection listener is registered in MainActivity; no explicit start needed for SDK 1.137.1
+            Log.d(TAG, "Person detection active via OnDetectionStateChangedListener")
         } catch (e: Exception) {
             Log.e(TAG, "Detection error: ${e.message}")
         }
     }
 
     fun stopDetection() {
-        try { robot.stopDetection() } catch (e: Exception) { Log.e(TAG, "Stop detection error: ${e.message}") }
+        // No-op for SDK 1.137.1 — detection stops when listener is removed in onStop
+        Log.d(TAG, "Detection listener will be removed in onStop")
     }
 
     // --- Display ---
