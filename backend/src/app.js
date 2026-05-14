@@ -24,7 +24,15 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      const ok = [
+        process.env.FRONTEND_URL || 'http://localhost:5173',
+        /^http:\/\/192\.168\.\d+\.\d+:5173$/,
+        /^http:\/\/10\.\d+\.\d+\.\d+:5173$/,
+      ].some(o => o instanceof RegExp ? o.test(origin) : o === origin);
+      cb(ok ? null : new Error('CORS blocked'), ok);
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -35,8 +43,17 @@ setIo(io);
 setQrIo(io);
 
 app.use(helmet({ crossOriginEmbedderPolicy: false }));
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  /^http:\/\/192\.168\.\d+\.\d+:5173$/,
+  /^http:\/\/10\.\d+\.\d+\.\d+:5173$/,
+];
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    const ok = allowedOrigins.some(o => o instanceof RegExp ? o.test(origin) : o === origin);
+    cb(ok ? null : new Error('CORS blocked'), ok);
+  },
   credentials: true,
 }));
 
