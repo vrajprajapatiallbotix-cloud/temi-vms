@@ -51,4 +51,6 @@ data class ErrorReportRequest(
     val message: String
 )
 
+data class LocationSyncRequest(val serial: String, val locations: List<String>)
+
 data class GenericResponse(val ok: Boolean, val message: String? = null)

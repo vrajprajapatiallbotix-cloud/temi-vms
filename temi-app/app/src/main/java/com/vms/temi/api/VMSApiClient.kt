@@ -53,6 +53,19 @@ object VMSApiClient {
         }
     }
 
+    suspend fun syncLocations(serial: String, locations: List<String>) {
+        withContext(Dispatchers.IO) {
+            try {
+                val response = service.syncLocations(LocationSyncRequest(serial, locations))
+                if (response.isSuccessful) {
+                    android.util.Log.d("VMSApiClient", "Synced ${locations.size} locations: $locations")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("VMSApiClient", "Failed to sync locations: ${e.message}")
+            }
+        }
+    }
+
     suspend fun sendHeartbeat(serial: String, status: String = "online", task: String? = null) {
         withContext(Dispatchers.IO) {
             try {

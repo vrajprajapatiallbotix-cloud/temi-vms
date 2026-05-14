@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, Calendar, Building, Mail, Phone, MapPin, FileText, ArrowLeft } from 'lucide-react';
 import Sidebar from '../../components/common/Sidebar';
@@ -6,14 +6,23 @@ import QRDisplay from '../../components/common/QRDisplay';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
+const TEMI_SERIAL = '00126040079';
+
 export default function NewVisit() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [locations, setLocations] = useState([]);
   const [form, setForm] = useState({
     visitorName: '', visitorEmail: '', visitorPhone: '',
     visitorCompany: '', purpose: '', scheduledAt: '', meetingRoom: '', notes: '',
   });
+
+  useEffect(() => {
+    api.get(`/temi/locations/${TEMI_SERIAL}`)
+      .then(({ data }) => setLocations(data.savedRooms || []))
+      .catch(() => setLocations(['reception', 'meeting_room_a', 'meeting_room_b', 'conference_hall', 'waiting_area']));
+  }, []);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -97,11 +106,11 @@ export default function NewVisit() {
                     <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <select value={form.meetingRoom} onChange={set('meetingRoom')} className="input pl-8">
                       <option value="">Select room</option>
-                      <option value="meeting_room_a">Meeting Room A</option>
-                      <option value="meeting_room_b">Meeting Room B</option>
-                      <option value="meeting_room_c">Meeting Room C</option>
-                      <option value="conference_hall">Conference Hall</option>
-                      <option value="waiting_area">Waiting Area</option>
+                      {locations.map((loc) => (
+                        <option key={loc} value={loc}>
+                          {loc.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>

@@ -15,6 +15,9 @@ interface VMSApiService {
     @GET("temi/config/{serial}")
     suspend fun getConfig(@Path("serial") serial: String): Response<Any>
 
+    @POST("temi/locations/sync")
+    suspend fun syncLocations(@Body request: LocationSyncRequest): Response<GenericResponse>
+
     @POST("temi/checkout")
     suspend fun checkoutVisit(@Body request: CheckoutRequest): Response<GenericResponse>
 

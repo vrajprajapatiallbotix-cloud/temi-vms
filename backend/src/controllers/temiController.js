@@ -44,29 +44,51 @@ const getConfig = async (req, res, next) => {
   }
 };
 
-// GET /temi/locations/:serial — Get all saved navigation locations for this Temi
+// POST /temi/locations/sync — Temi pushes its saved locations to backend
+const syncLocations = async (req, res, next) => {
+  try {
+    const { serial, locations } = req.body;
+    if (!serial || !Array.isArray(locations)) {
+      return res.status(400).json({ error: 'serial and locations[] required' });
+    }
+
+    // Add column if first time
+    await query(
+      `ALTER TABLE temi_robots ADD COLUMN IF NOT EXISTS saved_locations JSONB DEFAULT '[]'`
+    );
+
+    await query(
+      `UPDATE temi_robots SET saved_locations = $1, last_seen = NOW() WHERE serial_number = $2`,
+      [JSON.stringify(locations), serial]
+    );
+
+    // Notify admin dashboard of location update
+    if (io) io.to('admin').emit('temi:locations_synced', { serial, locations });
+
+    console.log(`[Temi ${serial}] Synced ${locations.length} locations:`, locations);
+    res.json({ ok: true, synced: locations.length, locations });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /temi/locations/:serial — Get saved navigation locations for this Temi
 const getLocations = async (req, res, next) => {
   try {
+    await query(
+      `ALTER TABLE temi_robots ADD COLUMN IF NOT EXISTS saved_locations JSONB DEFAULT '[]'`
+    ).catch(() => {});
+
     const result = await query(
-      `SELECT l.name, l.address FROM temi_robots t
-       JOIN locations l ON l.id = t.location_id
-       WHERE t.serial_number = $1`,
+      `SELECT saved_locations FROM temi_robots WHERE serial_number = $1`,
       [req.params.serial]
     );
 
-    // Return room names that Temi has saved
-    res.json({
-      locations: result.rows,
-      savedRooms: [
-        'reception',
-        'meeting_room_a',
-        'meeting_room_b',
-        'meeting_room_c',
-        'lobby',
-        'waiting_area',
-        'security_desk',
-      ],
-    });
+    const savedRooms = result.rows[0]?.saved_locations?.length
+      ? result.rows[0].saved_locations
+      : ['reception', 'meeting_room_a', 'meeting_room_b', 'conference_hall', 'lobby', 'waiting_area'];
+
+    res.json({ savedRooms });
   } catch (err) {
     next(err);
   }
@@ -120,4 +142,4 @@ const reportError = async (req, res, next) => {
   }
 };
 
-module.exports = { heartbeat, getConfig, getLocations, checkoutVisit, reportError, setIo };
+module.exports = { heartbeat, getConfig, getLocations, syncLocations, checkoutVisit, reportError, setIo };

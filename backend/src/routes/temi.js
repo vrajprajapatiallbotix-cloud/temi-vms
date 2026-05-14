@@ -1,12 +1,15 @@
 const router = require('express').Router();
-const { heartbeat, getConfig, getLocations, checkoutVisit, reportError } = require('../controllers/temiController');
+const { heartbeat, getConfig, getLocations, syncLocations, checkoutVisit, reportError } = require('../controllers/temiController');
 const { authenticateTemi } = require('../middleware/auth');
 
-router.use(authenticateTemi);
+// Public — frontend reads locations to populate dropdowns
+router.get('/locations/:serial', getLocations);
 
+// Temi-authenticated routes
+router.use(authenticateTemi);
 router.post('/heartbeat', heartbeat);
 router.get('/config/:serial', getConfig);
-router.get('/locations/:serial', getLocations);
+router.post('/locations/sync', syncLocations);
 router.post('/checkout', checkoutVisit);
 router.post('/error', reportError);
 

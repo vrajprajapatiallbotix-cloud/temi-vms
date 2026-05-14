@@ -74,6 +74,19 @@ class MainActivity : AppCompatActivity(),
                 TemiManager.speakWelcome()
                 TemiManager.startDetection()
             }, 1000)
+
+            // Sync saved locations to backend
+            lifecycleScope.launch {
+                try {
+                    val locations = robot.locations
+                    if (locations.isNotEmpty()) {
+                        VMSApiClient.syncLocations(BuildConfig.TEMI_SERIAL, locations)
+                        Log.d(TAG, "Synced ${locations.size} locations: $locations")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to sync locations: ${e.message}")
+                }
+            }
         }
     }
 
