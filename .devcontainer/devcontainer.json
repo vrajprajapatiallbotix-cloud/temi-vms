@@ -8,29 +8,17 @@
     }
   },
 
+  "postCreateCommand": "npm --prefix backend install && npm --prefix frontend install && bash .devcontainer/db-init.sh",
+
   "forwardPorts": [5000, 5173],
   "portsAttributes": {
-    "5000": {
-      "label": "Backend API",
-      "onAutoForward": "silent",
-      "visibility": "public"
-    },
-    "5173": {
-      "label": "Frontend (Kiosk + Staff Portal)",
-      "onAutoForward": "openBrowser",
-      "visibility": "public"
-    }
+    "5000": { "label": "Backend API", "visibility": "public", "onAutoForward": "silent" },
+    "5173": { "label": "Frontend", "visibility": "public", "onAutoForward": "openBrowser" }
   },
-
-  "postCreateCommand": "bash .devcontainer/setup.sh",
 
   "customizations": {
     "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "bradlc.vscode-tailwindcss"
-      ]
+      "extensions": ["dbaeumer.vscode-eslint", "bradlc.vscode-tailwindcss"]
     }
   }
 }

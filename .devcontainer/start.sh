@@ -1,38 +1,31 @@
 #!/bin/bash
+# Start Temi VMS — run this in the Codespaces terminal
 
-# Load NVM so node/npm are available
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "🚀 Starting Temi VMS..."
 
-# Ensure PostgreSQL is running
-sudo service postgresql start 2>/dev/null
-sleep 1
-
-# Start backend in background
-echo "▶  Starting backend on port 5000..."
-cd /workspaces/temi-vms/backend
+# Start backend
+echo "▶  Backend  → port 5000"
+cd "$ROOT/backend"
 node src/server.js &
 BACKEND_PID=$!
 sleep 2
 
 # Start frontend
-echo "▶  Starting frontend on port 5173..."
-cd /workspaces/temi-vms/frontend
+echo "▶  Frontend → port 5173"
+cd "$ROOT/frontend"
 npm run dev &
 FRONTEND_PID=$!
 
 echo ""
-echo "✅ Temi VMS is running!"
+echo "✅ Both servers running!"
+echo "   Go to PORTS tab → click 🌐 on port 5173 for your public URL"
 echo ""
-echo "   📺 Frontend (Kiosk + Staff) → check PORTS tab in Codespaces for public URL"
-echo "   🔌 Backend API              → port 5000 (also in PORTS tab)"
+echo "   Admin:  admin@vms.com / Admin@123"
+echo "   Kiosk:  <your-url>/kiosk"
+echo "   Staff:  <your-url>/login"
 echo ""
-echo "   🔑 Admin login: admin@vms.com / Admin@123"
-echo "   🖥  Kiosk:      /kiosk"
-echo "   👤 Staff:       /login"
-echo ""
-echo "Press Ctrl+C to stop."
+echo "Press Ctrl+C to stop both servers."
+trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" INT
 wait $BACKEND_PID $FRONTEND_PID
