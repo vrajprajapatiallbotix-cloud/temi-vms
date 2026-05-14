@@ -37,20 +37,24 @@ object TemiSocketManager {
                 on("temi:escort") { args ->
                     try {
                         val data = args[0] as JSONObject
-                        val visitId      = data.optString("visitId")
-                        val visitorName  = data.optString("visitorName", "Visitor")
-                        val destination  = data.optString("destination", "reception")
-                        val instruction  = data.optString("instruction", "Please follow me")
+                        val visitId        = data.optString("visitId")
+                        val visitorName    = data.optString("visitorName", "Visitor")
+                        val visitorCompany = data.optString("visitorCompany", "")
+                        val hostName       = data.optString("hostName", "your host")
+                        val hostDepartment = data.optString("hostDepartment", "")
+                        val destination    = data.optString("destination", "reception")
+                        val meetingRoom    = data.optString("meetingRoom", destination)
+                        val instruction    = data.optString("instruction", "Please follow me")
 
-                        Log.d(TAG, "Escort: $visitorName → $destination")
+                        Log.d(TAG, "Escort: $visitorName → $destination (host: $hostName)")
 
                         val intent = Intent(appContext, VisitorDisplayActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                             putExtra(VisitorDisplayActivity.EXTRA_VISITOR_NAME, visitorName)
-                            putExtra(VisitorDisplayActivity.EXTRA_VISITOR_COMPANY, "")
-                            putExtra(VisitorDisplayActivity.EXTRA_HOST_NAME, "your host")
-                            putExtra(VisitorDisplayActivity.EXTRA_HOST_DEPARTMENT, "")
-                            putExtra(VisitorDisplayActivity.EXTRA_MEETING_ROOM, destination)
+                            putExtra(VisitorDisplayActivity.EXTRA_VISITOR_COMPANY, visitorCompany)
+                            putExtra(VisitorDisplayActivity.EXTRA_HOST_NAME, hostName)
+                            putExtra(VisitorDisplayActivity.EXTRA_HOST_DEPARTMENT, hostDepartment)
+                            putExtra(VisitorDisplayActivity.EXTRA_MEETING_ROOM, meetingRoom)
                             putExtra(VisitorDisplayActivity.EXTRA_VISIT_ID, visitId)
                             putExtra(VisitorDisplayActivity.EXTRA_DESTINATION, destination)
                             putExtra(VisitorDisplayActivity.EXTRA_NAV_INSTRUCTION, instruction)

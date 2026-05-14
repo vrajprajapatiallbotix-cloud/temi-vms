@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Clock, User, Building, Phone } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, User, Building, Phone, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import Sidebar from '../../components/common/Sidebar';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -9,15 +9,18 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
-function ApprovalCard({ visit, onAction }) {
+const TEMI_SERIAL = '00126040079';
+
+function ApprovalCard({ visit, locations, onAction }) {
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState('');
   const [showDecline, setShowDecline] = useState(false);
+  const [meetingRoom, setMeetingRoom] = useState(visit.meeting_room || '');
 
   const handleApprove = async () => {
     setLoading(true);
     try {
-      await onAction(visit.id, 'approve');
+      await onAction(visit.id, 'approve', undefined, meetingRoom || undefined);
     } finally {
       setLoading(false);
     }
@@ -61,6 +64,24 @@ function ApprovalCard({ visit, onAction }) {
       {visit.status === 'pending' && (
         <div className="mt-4 pt-4 border-t">
           {!showDecline ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                  <MapPin size={11} /> Where should Temi escort the visitor?
+                </label>
+                <select value={meetingRoom} onChange={(e) => setMeetingRoom(e.target.value)}
+                  className="input text-sm py-1.5">
+                  <option value="">— Select meeting room (required for Temi navigation) —</option>
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </option>
+                  ))}
+                </select>
+                {!meetingRoom && (
+                  <p className="text-xs text-amber-600 mt-1">Without a room, Temi will navigate to employee desk or reception.</p>
+                )}
+              </div>
             <div className="flex gap-3">
               <button onClick={handleApprove} disabled={loading}
                 className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50">
@@ -70,6 +91,7 @@ function ApprovalCard({ visit, onAction }) {
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
                 <XCircle size={15} /> Decline
               </button>
+            </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -94,6 +116,7 @@ function ApprovalCard({ visit, onAction }) {
 export default function VisitApprovals({ socket }) {
   const [pending, setPending] = useState([]);
   const [allVisits, setAllVisits] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
   const [approvedQR, setApprovedQR] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -116,14 +139,20 @@ export default function VisitApprovals({ socket }) {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
+    api.get(`/temi/locations/${TEMI_SERIAL}`)
+      .then(({ data }) => setLocations(data.savedRooms || []))
+      .catch(() => setLocations(['reception', 'meeting_room_a', 'meeting_room_b', 'conference_hall', 'waiting_area']));
+  }, []);
+
+  useEffect(() => {
     if (!socket) return;
     socket.on('visit:request', fetchData);
     return () => socket.off('visit:request', fetchData);
   }, [socket, fetchData]);
 
-  const handleAction = async (visitId, action, reason) => {
+  const handleAction = async (visitId, action, reason, meetingRoom) => {
     try {
-      const { data } = await api.post('/employee/approve', { visitId, action, declineReason: reason });
+      const { data } = await api.post('/employee/approve', { visitId, action, declineReason: reason, meetingRoom });
       toast.success(action === 'approve' ? 'Visit approved! QR sent to visitor.' : 'Visit declined.');
       if (action === 'approve' && data.qrImage) {
         setApprovedQR({ qrImage: data.qrImage, expiresAt: data.expiresAt });
@@ -184,7 +213,7 @@ export default function VisitApprovals({ socket }) {
                   <p>No pending approvals</p>
                 </div>
               ) : (
-                pending.map((v) => <ApprovalCard key={v.id} visit={v} onAction={handleAction} />)
+                pending.map((v) => <ApprovalCard key={v.id} visit={v} locations={locations} onAction={handleAction} />)
               )}
             </div>
           ) : (

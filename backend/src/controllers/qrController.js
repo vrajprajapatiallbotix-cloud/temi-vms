@@ -67,12 +67,18 @@ const validateQR = async (req, res, next) => {
     // Notify Temi robot to escort visitor
     if (io) {
       const temiSerial = process.env.TEMI_SERIAL || '00126040079';
+      const dest = visitInfo.meeting_room || visitInfo.desk_location || 'reception';
+      const destLabel = dest.replace(/_/g, ' ');
       io.to(`temi:${temiSerial}`).emit('temi:escort', {
         visitId,
         visitorName: visitInfo.visitor_name,
-        destination: visitInfo.meeting_room || visitInfo.desk_location || 'reception',
+        visitorCompany: visitInfo.company || '',
+        hostName: visitInfo.employee_name || 'your host',
+        hostDepartment: visitInfo.department || '',
+        destination: dest,
+        meetingRoom: visitInfo.meeting_room || '',
         instruction: visitInfo.meeting_room
-          ? `Please follow me to ${visitInfo.meeting_room.replace(/_/g, ' ')}`
+          ? `Please follow me to ${destLabel}`
           : `Please follow me to ${visitInfo.employee_name}'s desk`,
       });
     }

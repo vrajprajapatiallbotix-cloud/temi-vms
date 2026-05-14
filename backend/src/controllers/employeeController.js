@@ -81,7 +81,7 @@ const getPendingApprovals = async (req, res, next) => {
 // POST /employee/approve — approve or decline impromptu visit
 const approveVisit = async (req, res, next) => {
   try {
-    const { visitId, action, declineReason } = req.body;
+    const { visitId, action, declineReason, meetingRoom } = req.body;
 
     if (!visitId || !['approve', 'decline'].includes(action)) {
       return res.status(400).json({ error: 'visitId and action (approve/decline) required' });
@@ -105,8 +105,11 @@ const approveVisit = async (req, res, next) => {
 
     if (action === 'approve') {
       await query(
-        'UPDATE visits SET status = $1, approved_by = $2, approved_at = NOW() WHERE id = $3',
-        [VISIT_STATUS.APPROVED, req.user.id, visitId]
+        `UPDATE visits SET status = $1, approved_by = $2, approved_at = NOW()
+         ${meetingRoom ? ', meeting_room = $4' : ''} WHERE id = $3`,
+        meetingRoom
+          ? [VISIT_STATUS.APPROVED, req.user.id, visitId, meetingRoom]
+          : [VISIT_STATUS.APPROVED, req.user.id, visitId]
       );
 
       // Generate QR code
