@@ -14,6 +14,7 @@ import com.robotemi.sdk.TtsRequest
 import com.robotemi.sdk.listeners.OnDetectionStateChangedListener
 import com.robotemi.sdk.listeners.OnRobotReadyListener
 import com.vms.temi.api.VMSApiClient
+import com.vms.temi.socket.TemiSocketManager
 import com.vms.temi.temi.TemiManager
 import com.vms.temi.ui.QRScanActivity
 import kotlinx.coroutines.delay
@@ -54,6 +55,7 @@ class MainActivity : AppCompatActivity(),
         robot.addOnDetectionStateChangedListener(this)
         TemiManager.hideTopBar()
         startHeartbeat()
+        TemiSocketManager.connect(this)
     }
 
     override fun onStop() {
@@ -61,6 +63,11 @@ class MainActivity : AppCompatActivity(),
         robot.removeOnRobotReadyListener(this)
         robot.removeOnDetectionStateChangedListener(this)
         heartbeatTimer?.cancel()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        TemiSocketManager.disconnect()
     }
 
     override fun onRobotReady(isReady: Boolean) {
