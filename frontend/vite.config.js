@@ -5,9 +5,12 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true, // exposes on 0.0.0.0 so other devices on WiFi can access
+    host: true,
+    // Allow Codespaces *.app.github.dev domains
+    allowedHosts: 'all',
     proxy: {
       '/api': { target: 'http://localhost:5000', changeOrigin: true },
+      '/socket.io': { target: 'http://localhost:5000', changeOrigin: true, ws: true },
       '/uploads': { target: 'http://localhost:5000', changeOrigin: true },
     },
   },
