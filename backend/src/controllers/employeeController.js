@@ -102,11 +102,12 @@ const approveVisit = async (req, res, next) => {
       return res.status(400).json({ error: 'visitId and action (approve/decline) required' });
     }
 
+    // Admins can approve any visit; employees only their own
     const visitResult = await query(
       `SELECT v.*, vis.email as visitor_email, vis.name as visitor_name
        FROM visits v JOIN visitors vis ON vis.id = v.visitor_id
-       WHERE v.id = $1 AND v.host_employee_id = $2`,
-      [visitId, req.user.id]
+       WHERE v.id = $1 ${req.user.role !== 'admin' ? 'AND v.host_employee_id = $2' : ''}`,
+      req.user.role !== 'admin' ? [visitId, req.user.id] : [visitId]
     );
 
     if (!visitResult.rows.length) {
