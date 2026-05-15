@@ -52,6 +52,13 @@ function ApprovalCard({ visit, locations, onAction }) {
             <p className="text-sm text-gray-600 mt-1">
               <span className="font-medium">Purpose:</span> {visit.purpose}
             </p>
+            {visit.host_name && (
+              <p className="text-sm text-primary-600 mt-1 flex items-center gap-1">
+                <User size={12} />
+                <span className="font-medium">For:</span>&nbsp;{visit.host_name}
+                {visit.host_location && <span className="text-gray-400">— {visit.host_location}</span>}
+              </p>
+            )}
             <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
               <Clock size={12} />
               {formatDistanceToNow(new Date(visit.created_at), { addSuffix: true })}

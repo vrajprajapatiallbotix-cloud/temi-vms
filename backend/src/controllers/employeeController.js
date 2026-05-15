@@ -61,17 +61,32 @@ const getVisits = async (req, res, next) => {
 };
 
 // GET /employee/visits/pending — visits awaiting approval
+// Admins see ALL pending visits; employees see only their own
 const getPendingApprovals = async (req, res, next) => {
   try {
-    const result = await query(
-      `SELECT v.*, vis.name as visitor_name, vis.email as visitor_email,
-              vis.phone as visitor_phone, vis.company
-       FROM visits v
-       JOIN visitors vis ON vis.id = v.visitor_id
-       WHERE v.host_employee_id = $1 AND v.status = 'pending' AND v.visit_type = 'impromptu'
-       ORDER BY v.created_at DESC`,
-      [req.user.id]
-    );
+    let result;
+    if (req.user.role === 'admin') {
+      result = await query(
+        `SELECT v.*, vis.name as visitor_name, vis.email as visitor_email,
+                vis.phone as visitor_phone, vis.company,
+                u.name as host_name, u.department as host_department, u.desk_location as host_location
+         FROM visits v
+         JOIN visitors vis ON vis.id = v.visitor_id
+         JOIN users u ON u.id = v.host_employee_id
+         WHERE v.status = 'pending' AND v.visit_type = 'impromptu'
+         ORDER BY v.created_at DESC`
+      );
+    } else {
+      result = await query(
+        `SELECT v.*, vis.name as visitor_name, vis.email as visitor_email,
+                vis.phone as visitor_phone, vis.company
+         FROM visits v
+         JOIN visitors vis ON vis.id = v.visitor_id
+         WHERE v.host_employee_id = $1 AND v.status = 'pending' AND v.visit_type = 'impromptu'
+         ORDER BY v.created_at DESC`,
+        [req.user.id]
+      );
+    }
     res.json(result.rows);
   } catch (err) {
     next(err);
