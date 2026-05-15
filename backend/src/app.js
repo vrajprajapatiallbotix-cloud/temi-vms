@@ -22,17 +22,30 @@ const { setIo: setQrIo } = require('./controllers/qrController');
 
 const app = express();
 const httpServer = createServer(app);
+
+// Trust Codespaces / reverse proxy headers (fixes rate-limit X-Forwarded-For error)
+app.set('trust proxy', 1);
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  const allowed = [
+    process.env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ].filter(Boolean);
+  return (
+    allowed.includes(origin) ||
+    /^https?:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin) ||
+    /^https?:\/\/10\.\d+\.\d+\.\d+:\d+$/.test(origin) ||
+    // Allow all GitHub Codespaces domains
+    /\.app\.github\.dev$/.test(origin) ||
+    /\.github\.dev$/.test(origin)
+  );
+};
+
 const io = new Server(httpServer, {
   cors: {
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      const ok = [
-        process.env.FRONTEND_URL || 'http://localhost:5173',
-        /^http:\/\/192\.168\.\d+\.\d+:5173$/,
-        /^http:\/\/10\.\d+\.\d+\.\d+:5173$/,
-      ].some(o => o instanceof RegExp ? o.test(origin) : o === origin);
-      cb(ok ? null : new Error('CORS blocked'), ok);
-    },
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -43,17 +56,8 @@ setIo(io);
 setQrIo(io);
 
 app.use(helmet({ crossOriginEmbedderPolicy: false }));
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  /^http:\/\/192\.168\.\d+\.\d+:5173$/,
-  /^http:\/\/10\.\d+\.\d+\.\d+:5173$/,
-];
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
-    const ok = allowedOrigins.some(o => o instanceof RegExp ? o.test(origin) : o === origin);
-    cb(ok ? null : new Error('CORS blocked'), ok);
-  },
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
   credentials: true,
 }));
 
