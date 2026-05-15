@@ -24,9 +24,19 @@ android {
         buildConfig true
     }
 
+    signingConfigs {
+        release {
+            storeFile     file('../nanta-temi.jks')
+            storePassword 'Nanta@2024'
+            keyAlias      'nanta-temi'
+            keyPassword   'Nanta@2024'
+        }
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+            signingConfig   signingConfigs.release
+            minifyEnabled   false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

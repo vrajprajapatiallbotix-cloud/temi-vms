@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- Camera preview -->
+    <!-- Full-screen camera preview -->
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="0dp"
@@ -16,29 +16,50 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Scan overlay frame -->
+    <!-- Dark overlay (full screen) -->
     <View
-        android:id="@+id/scanOverlay"
-        android:layout_width="280dp"
-        android:layout_height="280dp"
-        android:background="@drawable/qr_scan_frame"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#99000000"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="60dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Top instruction bar -->
+    <!-- QR scan frame (clear cutout via drawable) -->
+    <View
+        android:id="@+id/scanOverlay"
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:background="@drawable/qr_scan_frame"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/bottomBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Top bar -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="20dp"
-        android:background="#CC000000"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        android:background="#E6000000"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:text="NANTA TECH LIMITED"
+            android:textSize="11sp"
+            android:textColor="#DC2626"
+            android:letterSpacing="0.20"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
 
         <TextView
             android:text="QR Code Check-In"
@@ -46,37 +67,49 @@
             android:textColor="#FFFFFF"
             android:textStyle="bold"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"/>
 
         <TextView
             android:id="@+id/tvInstruction"
-            android:text="Please hold your QR code in front of the camera"
-            android:textSize="16sp"
-            android:textColor="#aac4ff"
+            android:text="Hold your QR code steady inside the frame"
+            android:textSize="13sp"
+            android:textColor="#FFAAAA"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"/>
     </LinearLayout>
 
-    <!-- Bottom status bar -->
+    <!-- Bottom bar -->
     <LinearLayout
+        android:id="@+id/bottomBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="16dp"
-        android:background="#CC000000"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
+        android:background="#E6000000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
             android:id="@+id/tvScanStatus"
-            android:text="Scanning..."
+            android:text="Scanning…"
             android:textSize="14sp"
-            android:textColor="#9ca3af"
+            android:textColor="#FF9999"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="Visitor Management System  ·  Powered by Temi"
+            android:textSize="10sp"
+            android:textColor="#660000"
+            android:letterSpacing="0.04"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
