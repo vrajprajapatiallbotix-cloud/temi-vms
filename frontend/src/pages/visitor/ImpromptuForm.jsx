@@ -19,8 +19,8 @@ export default function ImpromptuForm() {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const { data } = await api.get(`/admin/employees?search=${empSearch}&role=employee&limit=20`);
-        setEmployees(data.employees || []);
+        const { data } = await api.get(`/visitor/employees/search?q=${empSearch}`);
+        setEmployees(data || []);
       } catch {}
     };
     const t = setTimeout(fetchEmployees, 300);

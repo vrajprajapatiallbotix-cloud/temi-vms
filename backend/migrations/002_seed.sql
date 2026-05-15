@@ -1,8 +1,8 @@
--- Default location (Jarvis Technolabs HQ)
+-- Default location
 INSERT INTO locations (id, name, address, temi_serial)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
-  'Jarvis Technolabs HQ',
+  'Nanta Tech Limited HQ',
   'Main Office, Ground Floor',
   '00126040079'
 ) ON CONFLICT DO NOTHING;

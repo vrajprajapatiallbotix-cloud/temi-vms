@@ -124,13 +124,17 @@ const createImpromptu = async (req, res, next) => {
 
     const visit = visitResult.rows[0];
 
-    // Notify employee
-    await notifyVisitRequest({
-      employeeId,
-      visitId: visit.id,
-      visitorName,
-      visitorCompany,
-    });
+    // Notify employee — wrapped so a notification failure never crashes the request
+    try {
+      await notifyVisitRequest({
+        employeeId,
+        visitId: visit.id,
+        visitorName,
+        visitorCompany,
+      });
+    } catch (e) {
+      console.error('Notification error (non-fatal):', e.message);
+    }
 
     // Send email notification to employee
     const { sendApprovalNotification } = require('../services/emailService');

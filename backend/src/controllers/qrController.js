@@ -67,22 +67,35 @@ const validateQR = async (req, res, next) => {
     // Notify Temi robot to escort visitor
     if (io) {
       const temiSerial = process.env.TEMI_SERIAL || '00126040079';
-      const dest = visitInfo.meeting_room || visitInfo.desk_location || 'reception';
-      const destLabel = dest.replace(/_/g, ' ');
+
+      // Fetch Temi's actual saved locations to pick a valid fallback
+      const robotRow = await query(
+        `SELECT saved_locations FROM temi_robots WHERE serial_number = $1`,
+        [temiSerial]
+      ).catch(() => ({ rows: [] }));
+      const savedLocations = robotRow.rows[0]?.saved_locations || [];
+
+      // Use meeting_room if set, otherwise first saved location, otherwise null
+      const dest = visitInfo.meeting_room ||
+        (savedLocations.length ? savedLocations[0] : null);
+
+      const destLabel = dest ? dest.replace(/_/g, ' ') : '';
+
       io.to(`temi:${temiSerial}`).emit('temi:escort', {
         visitId,
         visitorName: visitInfo.visitor_name,
         visitorCompany: visitInfo.company || '',
         hostName: visitInfo.employee_name || 'your host',
         hostDepartment: visitInfo.department || '',
-        destination: dest,
+        destination: dest || '',
         meetingRoom: visitInfo.meeting_room || '',
-        instruction: visitInfo.meeting_room
+        instruction: dest
           ? `Please follow me to ${destLabel}`
-          : `Please follow me to ${visitInfo.employee_name}'s desk`,
+          : `Please follow me to ${visitInfo.employee_name}'s area`,
       });
     }
 
+    const dest = visitInfo.meeting_room || null;
     res.json({
       valid: true,
       visitor: {
@@ -102,10 +115,10 @@ const validateQR = async (req, res, next) => {
         deskLocation: visitInfo.desk_location,
       },
       navigation: {
-        destination: visitInfo.meeting_room || visitInfo.desk_location || 'reception',
-        instruction: visitInfo.meeting_room
-          ? `Please follow me to ${visitInfo.meeting_room}`
-          : `Please follow me to ${visitInfo.employee_name}'s desk`,
+        destination: dest,
+        instruction: dest
+          ? `Please follow me to ${dest.replace(/_/g, ' ')}`
+          : `Please follow me`,
       },
     });
   } catch (err) {
