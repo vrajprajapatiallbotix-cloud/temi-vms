@@ -11,6 +11,7 @@ import VisitApprovals from './pages/employee/VisitApprovals';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import EmployeeManagement from './pages/admin/EmployeeManagement';
 import VisitorLogs from './pages/admin/VisitorLogs';
+import TemiRobotPage from './pages/admin/TemiRobotPage';
 import VisitorForm from './pages/visitor/VisitorForm';
 import ImpromptuForm from './pages/visitor/ImpromptuForm';
 import QRPage from './pages/visitor/QRPage';
@@ -78,6 +79,11 @@ export default function App() {
         <Route path="/admin/logs" element={
           <ProtectedRoute roles={['admin']}>
             <VisitorLogs />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/temi" element={
+          <ProtectedRoute roles={['admin']}>
+            <TemiRobotPage />
           </ProtectedRoute>
         } />
 

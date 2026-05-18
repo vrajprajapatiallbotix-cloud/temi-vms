@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, UserPlus, CheckSquare, Users, ClipboardList,
-  BarChart3, LogOut, Bot, Shield,
+  BarChart3, LogOut, Bot, Shield, MapPin,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import toast from 'react-hot-toast';
@@ -43,6 +43,7 @@ export default function Sidebar() {
     { to: '/admin', icon: BarChart3, label: 'Overview' },
     { to: '/admin/employees', icon: Users, label: 'Employees' },
     { to: '/admin/logs', icon: ClipboardList, label: 'Visit Logs' },
+    { to: '/admin/temi', icon: Bot, label: 'Temi Robot' },
     { to: '/dashboard', icon: LayoutDashboard, label: 'My Visits' },
     { to: '/visits/new', icon: UserPlus, label: 'New Visit' },
     { to: '/visits/approvals', icon: CheckSquare, label: 'Approvals' },
