@@ -23,7 +23,7 @@ object TemiManager {
         }
     }
 
-    fun speakWelcome() = speak("Welcome! I am Temi, your visitor assistant. Please scan your QR code to check in.")
+    fun speakWelcome() = speak("Welcome to Nanta Tech Limited! I am Temi, your visitor assistant. Please scan your QR code to check in.")
 
     fun speakScanPrompt() = speak("Please show your QR code to the camera. I will scan it for you.")
 
@@ -37,6 +37,14 @@ object TemiManager {
 
     fun speakWaitInstruction(room: String) =
         speak("We have arrived at $room. Please take a seat and your host will be with you shortly.")
+
+    fun speakWalkInGreeting() = speak("Hello! I can register you as a walk-in visitor. Please fill in your details.")
+
+    fun speakWalkInWaiting(hostName: String) = speak("Thank you! I have notified $hostName of your arrival. Please wait for their approval.")
+
+    fun speakWalkInApproved() = speak("Great news! Your visit has been approved. Please scan the QR code on my screen to check in.")
+
+    fun speakWalkInTimeout() = speak("I'm sorry, the request has timed out. Please ask reception for assistance.")
 
     fun speakQRError(errorCode: String) {
         val message = when (errorCode) {
@@ -53,36 +61,25 @@ object TemiManager {
 
     // --- Navigation ---
 
-    fun goToLocation(locationName: String) {
-        try {
-            // Map logical names to Temi-saved location names
-            val temiLocation = mapLocationName(locationName)
-            robot.goTo(temiLocation)
-            Log.d(TAG, "Navigating to: $temiLocation (mapped from: $locationName)")
-        } catch (e: Exception) {
-            Log.e(TAG, "Navigation error: ${e.message}")
-        }
-    }
-
-    private fun mapLocationName(name: String): String {
-        return when (name.lowercase().replace(" ", "_")) {
-            "meeting_room_a" -> "meeting_room_a"
-            "meeting_room_b" -> "meeting_room_b"
-            "meeting_room_c" -> "meeting_room_c"
-            "conference_hall" -> "conference_hall"
-            "waiting_area" -> "waiting_area"
-            "reception" -> "reception"
-            "home_base" -> "home base"
-            else -> name
-        }
-    }
-
     fun stopMovement() {
         try { robot.stopMovement() } catch (e: Exception) { Log.e(TAG, "Stop error: ${e.message}") }
     }
 
     fun returnHome() {
-        try { robot.goTo("home base") } catch (e: Exception) { Log.e(TAG, "Home error: ${e.message}") }
+        try {
+            val locations = robot.locations
+            // Find a "home" location by name, fall back to first saved location
+            val home = locations.find { it.lowercase().contains("home") }
+                ?: locations.firstOrNull()
+            if (home != null) {
+                robot.goTo(home)
+                Log.d(TAG, "Returning home to: $home")
+            } else {
+                Log.w(TAG, "No locations on map — cannot return home")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Home error: ${e.message}")
+        }
     }
 
     // --- Detection ---

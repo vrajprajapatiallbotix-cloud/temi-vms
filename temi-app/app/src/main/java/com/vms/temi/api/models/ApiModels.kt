@@ -54,3 +54,26 @@ data class ErrorReportRequest(
 data class LocationSyncRequest(val serial: String, val locations: List<String>)
 
 data class GenericResponse(val ok: Boolean, val message: String? = null)
+
+data class EmployeeSearchResult(
+    val id: String,
+    val name: String,
+    val department: String?,
+    @com.google.gson.annotations.SerializedName("desk_location") val deskLocation: String?
+)
+
+data class WalkInRequest(
+    val visitorName: String,
+    val visitorPhone: String? = null,
+    val visitorCompany: String? = null,
+    val purpose: String = "Walk-in visit",
+    val employeeId: String
+)
+
+data class WalkInVisitData(val id: Long = 0)
+
+data class WalkInResponse(
+    val visit: WalkInVisitData? = null,
+    val message: String? = null,
+    val error: String? = null
+)

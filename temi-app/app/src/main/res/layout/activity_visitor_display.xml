@@ -6,10 +6,10 @@
     android:orientation="vertical"
     android:background="#080000">
 
-    <!-- ── Top brand bar ─────────────────────────────────────────────── -->
+    <!-- ── Top brand bar ─────────────────────────────────────── -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="48dp"
         android:orientation="horizontal"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
@@ -30,19 +30,24 @@
             android:id="@+id/tvNavStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="● NAVIGATING"
-            android:textSize="12sp"
-            android:textColor="#FFCCCC"/>
+            android:text="● GREETING"
+            android:textSize="11sp"
+            android:textColor="#FFCCCC"
+            android:background="@drawable/bg_status_pill"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"/>
     </LinearLayout>
 
-    <!-- ── Main row ───────────────────────────────────────────────────── -->
+    <!-- ── Main row ──────────────────────────────────────────── -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="horizontal">
 
-        <!-- Left: face + instruction label -->
+        <!-- Left: face + instruction -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -53,27 +58,37 @@
 
             <com.vms.temi.ui.TemiFaceView
                 android:id="@+id/temiFace"
-                android:layout_width="190dp"
-                android:layout_height="190dp"/>
+                android:layout_width="180dp"
+                android:layout_height="180dp"/>
 
             <TextView
                 android:id="@+id/tvInstruction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Please follow me"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textColor="#FF7777"
                 android:gravity="center"
-                android:layout_marginTop="14dp"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"/>
+                android:layout_marginTop="12dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"/>
+
+            <TextView
+                android:id="@+id/tvCountdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="10sp"
+                android:textColor="#5a0000"
+                android:gravity="center"
+                android:layout_marginTop="6dp"/>
         </LinearLayout>
 
         <!-- Separator -->
         <View
             android:layout_width="1dp"
             android:layout_height="match_parent"
-            android:background="#380000"/>
+            android:background="#2a0000"/>
 
         <!-- Right: visitor info -->
         <LinearLayout
@@ -82,53 +97,48 @@
             android:layout_weight="62"
             android:orientation="vertical"
             android:gravity="center_vertical"
-            android:paddingStart="40dp"
-            android:paddingEnd="40dp"
-            android:paddingTop="20dp"
-            android:paddingBottom="20dp">
+            android:paddingStart="36dp"
+            android:paddingEnd="36dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
 
-            <!-- Welcome label -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="WELCOME"
-                android:textSize="11sp"
+                android:textSize="10sp"
                 android:textColor="#DC2626"
                 android:letterSpacing="0.22"
                 android:textStyle="bold"/>
 
-            <!-- Visitor name (large) -->
             <TextView
                 android:id="@+id/tvVisitorName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Visitor Name"
-                android:textSize="40sp"
+                android:textSize="38sp"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"
                 android:layout_marginTop="2dp"
                 android:maxLines="1"
                 android:ellipsize="end"/>
 
-            <!-- Company -->
             <TextView
                 android:id="@+id/tvVisitorCompany"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Company"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textColor="#FF9999"
                 android:layout_marginTop="3dp"/>
 
-            <!-- Divider -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#280000"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="18dp"/>
+                android:background="#200000"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="14dp"/>
 
-            <!-- Host info -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -139,16 +149,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="MEETING  "
-                    android:textSize="10sp"
+                    android:textSize="9sp"
                     android:textColor="#7a0000"
-                    android:letterSpacing="0.12"/>
+                    android:letterSpacing="0.14"/>
 
                 <TextView
                     android:id="@+id/tvHostName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Host Name"
-                    android:textSize="20sp"
+                    android:textSize="19sp"
                     android:textColor="#FFFFFF"
                     android:textStyle="bold"/>
             </LinearLayout>
@@ -158,19 +168,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Department"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textColor="#FF7777"
                 android:layout_marginTop="3dp"/>
 
-            <!-- Divider -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#280000"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="18dp"/>
+                android:background="#200000"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="14dp"/>
 
-            <!-- Destination -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -181,21 +189,92 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="DESTINATION  "
-                    android:textSize="10sp"
+                    android:textSize="9sp"
                     android:textColor="#7a0000"
-                    android:letterSpacing="0.12"/>
+                    android:letterSpacing="0.14"/>
 
                 <TextView
                     android:id="@+id/tvMeetingRoom"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Room"
-                    android:textSize="20sp"
+                    android:textSize="19sp"
                     android:textColor="#FFFFFF"
                     android:textStyle="bold"/>
             </LinearLayout>
-
         </LinearLayout>
+    </LinearLayout>
+
+    <!-- ── Step progress bar ─────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="38dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#0d0000"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp">
+
+        <TextView
+            android:id="@+id/step1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CHECK-IN"
+            android:textSize="9sp"
+            android:textColor="#DC2626"
+            android:textStyle="bold"
+            android:letterSpacing="0.10"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  ──  "
+            android:textSize="9sp"
+            android:textColor="#3a0000"/>
+
+        <TextView
+            android:id="@+id/step2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WELCOME"
+            android:textSize="9sp"
+            android:textColor="#4a0000"
+            android:textStyle="bold"
+            android:letterSpacing="0.10"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  ──  "
+            android:textSize="9sp"
+            android:textColor="#3a0000"/>
+
+        <TextView
+            android:id="@+id/step3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NAVIGATING"
+            android:textSize="9sp"
+            android:textColor="#4a0000"
+            android:textStyle="bold"
+            android:letterSpacing="0.10"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="  ──  "
+            android:textSize="9sp"
+            android:textColor="#3a0000"/>
+
+        <TextView
+            android:id="@+id/step4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ARRIVED"
+            android:textSize="9sp"
+            android:textColor="#4a0000"
+            android:textStyle="bold"
+            android:letterSpacing="0.10"/>
     </LinearLayout>
 
 </LinearLayout>

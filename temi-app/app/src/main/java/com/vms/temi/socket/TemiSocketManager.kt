@@ -14,6 +14,18 @@ object TemiSocketManager {
     private const val TAG = "TemiSocket"
     private var socket: Socket? = null
 
+    /** Set by WalkInActivity while waiting for approval; cleared on destroy. */
+    var onQRApproved: ((qrImage: String) -> Unit)? = null
+
+    fun joinVisitRoom(visitId: String) {
+        try {
+            socket?.emit("visit:join", JSONObject().put("visitId", visitId))
+            Log.d(TAG, "Joined visit room: visit:$visitId")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to join visit room: ${e.message}")
+        }
+    }
+
     fun connect(context: Context) {
         if (socket?.connected() == true) return
 
@@ -62,6 +74,17 @@ object TemiSocketManager {
                         appContext.startActivity(intent)
                     } catch (e: Exception) {
                         Log.e(TAG, "Escort handling error: ${e.message}")
+                    }
+                }
+
+                on("visit:approved_qr") { args ->
+                    try {
+                        val data = args[0] as JSONObject
+                        val qrImage = data.optString("qrImage", "")
+                        Log.d(TAG, "QR approved event received")
+                        if (qrImage.isNotEmpty()) onQRApproved?.invoke(qrImage)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "visit:approved_qr handling error: ${e.message}")
                     }
                 }
 

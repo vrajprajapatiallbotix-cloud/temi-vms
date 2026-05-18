@@ -65,11 +65,11 @@ object VMSApiClient {
         }
     }
 
-    suspend fun sendHeartbeat(serial: String, status: String = "online", task: String? = null) {
-        withContext(Dispatchers.IO) {
+    suspend fun sendHeartbeat(serial: String, status: String = "online", task: String? = null): Boolean {
+        return withContext(Dispatchers.IO) {
             try {
-                service.sendHeartbeat(HeartbeatRequest(serial, status, task))
-            } catch (_: Exception) {}
+                service.sendHeartbeat(HeartbeatRequest(serial, status, task)).isSuccessful
+            } catch (_: Exception) { false }
         }
     }
 
@@ -82,6 +82,23 @@ object VMSApiClient {
             try {
                 service.reportError(ErrorReportRequest(serial, errorType, visitId, message))
             } catch (_: Exception) {}
+        }
+    }
+
+    suspend fun searchEmployees(q: String): List<EmployeeSearchResult> = withContext(Dispatchers.IO) {
+        try {
+            val response = service.searchEmployees(q)
+            if (response.isSuccessful) response.body() ?: emptyList() else emptyList()
+        } catch (_: Exception) { emptyList() }
+    }
+
+    suspend fun submitWalkIn(request: WalkInRequest): WalkInResponse? = withContext(Dispatchers.IO) {
+        try {
+            val response = service.submitWalkIn(request)
+            if (response.isSuccessful) response.body() else null
+        } catch (e: Exception) {
+            android.util.Log.e("VMSApiClient", "Walk-in submit failed: ${e.message}")
+            null
         }
     }
 }

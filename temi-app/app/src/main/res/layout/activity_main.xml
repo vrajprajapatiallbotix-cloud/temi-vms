@@ -6,49 +6,50 @@
     android:orientation="vertical"
     android:background="#080000">
 
-    <!-- ── Top brand bar ─────────────────────────────────────────────── -->
+    <!-- ── Top brand bar ─────────────────────────────────────── -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="48dp"
         android:orientation="horizontal"
-        android:paddingStart="28dp"
-        android:paddingEnd="28dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
         android:gravity="center_vertical"
         android:background="#B91C1C">
 
         <View
+            android:id="@+id/vConnectionDot"
             android:layout_width="8dp"
             android:layout_height="8dp"
             android:background="#FF9999"
-            android:layout_marginEnd="12dp"/>
+            android:layout_marginEnd="10dp"/>
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="NANTA TECH LIMITED  ·  Visitor Reception"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
-            android:letterSpacing="0.07"/>
+            android:letterSpacing="0.06"/>
 
         <TextView
             android:id="@+id/tvBattery"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Battery: --"
+            android:text="🔋 --"
             android:textSize="12sp"
             android:textColor="#FFCCCC"/>
     </LinearLayout>
 
-    <!-- ── Main content row ───────────────────────────────────────────── -->
+    <!-- ── Main content ──────────────────────────────────────── -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="horizontal">
 
-        <!-- Left panel: animated Temi face -->
+        <!-- Left: face + stats -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -59,104 +60,210 @@
 
             <com.vms.temi.ui.TemiFaceView
                 android:id="@+id/temiFace"
-                android:layout_width="200dp"
-                android:layout_height="200dp"/>
+                android:layout_width="190dp"
+                android:layout_height="190dp"/>
 
-            <TextView
+            <!-- Visit counter -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="T  E  M  I"
-                android:textSize="11sp"
-                android:textColor="#5a0000"
-                android:letterSpacing="0.35"
-                android:layout_marginTop="14dp"/>
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_marginTop="16dp">
+
+                <TextView
+                    android:id="@+id/tvVisitCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="28sp"
+                    android:textColor="#DC2626"
+                    android:textStyle="bold"
+                    android:gravity="center"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VISITS TODAY"
+                    android:textSize="9sp"
+                    android:textColor="#5a0000"
+                    android:letterSpacing="0.22"
+                    android:gravity="center"/>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Separator -->
         <View
             android:layout_width="1dp"
             android:layout_height="match_parent"
-            android:background="#380000"/>
+            android:background="#2a0000"/>
 
-        <!-- Right panel: welcome + status + button -->
+        <!-- Right: clock + welcome + action -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="62"
             android:orientation="vertical"
-            android:gravity="center_vertical"
-            android:paddingStart="44dp"
-            android:paddingEnd="44dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="24dp">
+            android:paddingStart="40dp"
+            android:paddingEnd="40dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Clock section -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="WELCOME TO"
-                android:textSize="11sp"
-                android:textColor="#DC2626"
-                android:letterSpacing="0.20"
-                android:textStyle="bold"/>
+                android:orientation="vertical"
+                android:paddingBottom="14dp">
 
-            <TextView
-                android:id="@+id/tvWelcome"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nanta Tech Limited"
-                android:textSize="36sp"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"/>
+                <TextView
+                    android:id="@+id/tvClock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:00 AM"
+                    android:textSize="38sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace"/>
 
-            <TextView
-                android:id="@+id/tvSubtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="I am Temi, your visitor assistant"
-                android:textSize="15sp"
-                android:textColor="#FF7777"
-                android:layout_marginTop="6dp"/>
+                <TextView
+                    android:id="@+id/tvDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Loading…"
+                    android:textSize="12sp"
+                    android:textColor="#FF7777"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
 
-            <!-- Red accent line -->
+            <!-- Red separator line -->
             <View
-                android:layout_width="52dp"
-                android:layout_height="3dp"
-                android:background="#DC2626"
-                android:layout_marginTop="22dp"
-                android:layout_marginBottom="22dp"/>
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#280000"/>
 
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="wrap_content"
+            <!-- Welcome text -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_vertical"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="WELCOME TO"
+                    android:textSize="10sp"
+                    android:textColor="#DC2626"
+                    android:letterSpacing="0.20"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/tvWelcome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nanta Tech Limited"
+                    android:textSize="30sp"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:layout_marginTop="3dp"/>
+
+                <TextView
+                    android:id="@+id/tvSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="I am Temi, your visitor assistant"
+                    android:textSize="14sp"
+                    android:textColor="#FF7777"
+                    android:layout_marginTop="4dp"/>
+            </LinearLayout>
+
+            <!-- Red separator -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#280000"/>
+
+            <!-- Status + button section -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Initializing…"
-                android:textSize="13sp"
-                android:textColor="#FFFFFF"
-                android:background="@drawable/bg_status_pill"
-                android:paddingStart="20dp"
-                android:paddingEnd="20dp"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp"/>
+                android:orientation="vertical"
+                android:paddingTop="14dp">
 
-            <Button
-                android:id="@+id/btnScanQR"
-                android:layout_width="220dp"
-                android:layout_height="50dp"
-                android:text="SCAN QR CODE"
-                android:textSize="14sp"
-                android:letterSpacing="0.08"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#DC2626"
-                android:layout_marginTop="18dp"/>
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Initializing…"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_status_pill"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    android:paddingTop="7dp"
+                    android:paddingBottom="7dp"/>
+
+                <!-- Pulsing scan button -->
+                <Button
+                    android:id="@+id/btnScanQR"
+                    android:layout_width="220dp"
+                    android:layout_height="50dp"
+                    android:text="SCAN QR CODE"
+                    android:textSize="14sp"
+                    android:letterSpacing="0.08"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#DC2626"
+                    android:elevation="6dp"
+                    android:layout_marginTop="14dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Have a QR code from your approval email"
+                    android:textSize="10sp"
+                    android:textColor="#5a0000"
+                    android:layout_marginTop="6dp"/>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="220dp"
+                    android:layout_height="1dp"
+                    android:background="#280000"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="12dp"/>
+
+                <!-- Walk-in button -->
+                <Button
+                    android:id="@+id/btnWalkIn"
+                    android:layout_width="220dp"
+                    android:layout_height="46dp"
+                    android:text="WALK-IN VISIT"
+                    android:textSize="13sp"
+                    android:letterSpacing="0.06"
+                    android:textColor="#FF9999"
+                    android:backgroundTint="#2a0000"
+                    android:elevation="2dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No QR? Register here for an impromptu visit"
+                    android:textSize="10sp"
+                    android:textColor="#5a0000"
+                    android:layout_marginTop="6dp"/>
+            </LinearLayout>
 
         </LinearLayout>
     </LinearLayout>
 
-    <!-- ── Footer ─────────────────────────────────────────────────────── -->
+    <!-- ── Footer ────────────────────────────────────────────── -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="34dp"
+        android:layout_height="30dp"
         android:orientation="horizontal"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
@@ -168,15 +275,16 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Serial: 00126040079"
-            android:textSize="10sp"
-            android:textColor="#4a0000"/>
+            android:textSize="9sp"
+            android:textColor="#3a0000"/>
 
         <TextView
+            android:id="@+id/tvConnectionStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Temi VMS v1.0  ·  Powered by Nanta Tech"
-            android:textSize="10sp"
-            android:textColor="#4a0000"/>
+            android:text="● Connecting…"
+            android:textSize="9sp"
+            android:textColor="#5a0000"/>
     </LinearLayout>
 
 </LinearLayout>

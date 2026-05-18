@@ -23,4 +23,10 @@ interface VMSApiService {
 
     @POST("temi/error")
     suspend fun reportError(@Body request: ErrorReportRequest): Response<GenericResponse>
+
+    @GET("visitor/employees/search")
+    suspend fun searchEmployees(@retrofit2.http.Query("q") q: String): Response<List<EmployeeSearchResult>>
+
+    @POST("visitor/impromptu")
+    suspend fun submitWalkIn(@Body request: WalkInRequest): Response<WalkInResponse>
 }

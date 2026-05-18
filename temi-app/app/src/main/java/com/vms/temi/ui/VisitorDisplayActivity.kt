@@ -1,5 +1,6 @@
 package com.vms.temi.ui
 
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -17,10 +18,16 @@ import kotlinx.coroutines.launch
 class VisitorDisplayActivity : AppCompatActivity() {
 
     private val TAG = "TemiVMS_Display"
+    private val mainHandler = Handler(Looper.getMainLooper())
     private lateinit var navManager: NavigationManager
     private lateinit var temiFace: TemiFaceView
     private lateinit var tvNavStatus: TextView
     private lateinit var tvInstruction: TextView
+    private lateinit var tvCountdown: TextView
+    private lateinit var step1: TextView
+    private lateinit var step2: TextView
+    private lateinit var step3: TextView
+    private lateinit var step4: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,9 +43,14 @@ class VisitorDisplayActivity : AppCompatActivity() {
         val navInstruction = intent.getStringExtra(EXTRA_NAV_INSTRUCTION) ?: "Please follow me"
 
         // Bind views
-        temiFace    = findViewById(R.id.temiFace)
-        tvNavStatus = findViewById(R.id.tvNavStatus)
+        temiFace      = findViewById(R.id.temiFace)
+        tvNavStatus   = findViewById(R.id.tvNavStatus)
         tvInstruction = findViewById(R.id.tvInstruction)
+        tvCountdown   = findViewById(R.id.tvCountdown)
+        step1         = findViewById(R.id.step1)
+        step2         = findViewById(R.id.step2)
+        step3         = findViewById(R.id.step3)
+        step4         = findViewById(R.id.step4)
 
         findViewById<TextView>(R.id.tvVisitorName).text    = visitorName
         findViewById<TextView>(R.id.tvVisitorCompany).text = visitorCompany.ifEmpty { "Guest" }
@@ -52,9 +64,10 @@ class VisitorDisplayActivity : AppCompatActivity() {
 
         tvInstruction.text = navInstruction
 
-        // Start in greeting state
+        // Start in greeting state — step 1 (check-in) done, step 2 (welcome) active
         temiFace.faceState = FaceState.GREETING
         tvNavStatus.text   = "● GREETING"
+        updateStep(2)
 
         navManager = NavigationManager()
         navManager.register()
@@ -68,15 +81,28 @@ class VisitorDisplayActivity : AppCompatActivity() {
         }, 800)
     }
 
+    private fun updateStep(activeStep: Int) {
+        val steps = listOf(step1, step2, step3, step4)
+        steps.forEachIndexed { index, tv ->
+            val n = index + 1
+            when {
+                n < activeStep  -> { tv.setTextColor(Color.parseColor("#DC2626")); tv.alpha = 1f }
+                n == activeStep -> { tv.setTextColor(Color.WHITE);                  tv.alpha = 1f }
+                else            -> { tv.setTextColor(Color.parseColor("#4a0000")); tv.alpha = 0.6f }
+            }
+        }
+    }
+
     private fun startNavigation(destination: String, visitId: String?, roomName: String) {
         val resolved = navManager.resolveLocation(destination)
         val speakName = (resolved ?: roomName.ifEmpty { destination }).replace("_", " ")
         Log.d(TAG, "Navigating — requested: $destination, resolved: $resolved")
 
         runOnUiThread {
-            temiFace.faceState    = FaceState.NAVIGATING
-            tvNavStatus.text      = "● NAVIGATING"
-            tvInstruction.text    = "Please follow me to ${speakName.replaceFirstChar { it.uppercase() }}"
+            temiFace.faceState = FaceState.NAVIGATING
+            tvNavStatus.text   = "● NAVIGATING"
+            tvInstruction.text = "Please follow me to ${speakName.replaceFirstChar { it.uppercase() }}"
+            updateStep(3)
         }
 
         TemiManager.speakNavigation(speakName)
@@ -91,7 +117,9 @@ class VisitorDisplayActivity : AppCompatActivity() {
                     val display = roomName.ifEmpty { destination }
                         .replace("_", " ").replaceFirstChar { it.uppercase() }
                     tvInstruction.text = "We have arrived! Welcome."
+                    updateStep(4)
                     TemiManager.speakWaitInstruction(display)
+                    startReturnCountdown()
                 }
 
                 if (visitId != null) {
@@ -118,6 +146,7 @@ class VisitorDisplayActivity : AppCompatActivity() {
                         "I'm sorry, I could not find the destination. Please ask staff for assistance."
                     TemiManager.speak(speech)
                     tvInstruction.text = "Navigation error — please ask staff for help."
+                    tvCountdown.text   = ""
                 }
                 lifecycleScope.launch {
                     VMSApiClient.reportError(
@@ -132,8 +161,24 @@ class VisitorDisplayActivity : AppCompatActivity() {
         )
     }
 
+    private fun startReturnCountdown() {
+        var seconds = 45
+        mainHandler.post(object : Runnable {
+            override fun run() {
+                if (seconds <= 0) {
+                    tvCountdown.text = "Returning home…"
+                    return
+                }
+                tvCountdown.text = "Returning home in ${seconds}s"
+                seconds--
+                mainHandler.postDelayed(this, 1000)
+            }
+        })
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        mainHandler.removeCallbacksAndMessages(null)
         navManager.unregister()
     }
 

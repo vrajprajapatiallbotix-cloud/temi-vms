@@ -16,17 +16,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Dark overlay (full screen) -->
+    <!-- Dark dim overlay -->
     <View
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#99000000"
+        android:background="#B3000000"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- QR scan frame (clear cutout via drawable) -->
+    <!-- QR scan frame -->
     <View
         android:id="@+id/scanOverlay"
         android:layout_width="260dp"
@@ -37,14 +37,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- Animated red scan line (sits inside the frame area) -->
+    <View
+        android:id="@+id/scanLine"
+        android:layout_width="0dp"
+        android:layout_height="3dp"
+        android:background="@drawable/scan_line_gradient"
+        android:alpha="0.9"
+        app:layout_constraintStart_toStartOf="@+id/scanOverlay"
+        app:layout_constraintEnd_toEndOf="@+id/scanOverlay"
+        app:layout_constraintTop_toTopOf="@+id/scanOverlay"/>
+
     <!-- Top bar -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp"
         android:paddingStart="32dp"
         android:paddingEnd="32dp"
         android:background="#E6000000"
@@ -54,30 +65,30 @@
 
         <TextView
             android:text="NANTA TECH LIMITED"
-            android:textSize="11sp"
+            android:textSize="10sp"
             android:textColor="#DC2626"
-            android:letterSpacing="0.20"
+            android:letterSpacing="0.22"
             android:textStyle="bold"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
         <TextView
             android:text="QR Code Check-In"
-            android:textSize="22sp"
+            android:textSize="20sp"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginTop="3dp"/>
 
         <TextView
             android:id="@+id/tvInstruction"
             android:text="Hold your QR code steady inside the frame"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textColor="#FFAAAA"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginTop="3dp"/>
     </LinearLayout>
 
     <!-- Bottom bar -->
@@ -87,8 +98,8 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:paddingTop="14dp"
-        android:paddingBottom="14dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
         android:background="#E6000000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -97,15 +108,24 @@
         <TextView
             android:id="@+id/tvScanStatus"
             android:text="Scanning…"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textColor="#FF9999"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
         <TextView
-            android:text="Visitor Management System  ·  Powered by Temi"
-            android:textSize="10sp"
+            android:id="@+id/tvCountdown"
+            android:text=""
+            android:textSize="11sp"
             android:textColor="#660000"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"/>
+
+        <TextView
+            android:text="Visitor Management System  ·  Powered by Temi"
+            android:textSize="9sp"
+            android:textColor="#440000"
             android:letterSpacing="0.04"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

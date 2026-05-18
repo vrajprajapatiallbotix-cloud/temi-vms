@@ -1,11 +1,16 @@
 package com.vms.temi
 
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
+import android.animation.ValueAnimator
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -18,7 +23,11 @@ import com.vms.temi.temi.TemiManager
 import com.vms.temi.ui.FaceState
 import com.vms.temi.ui.QRScanActivity
 import com.vms.temi.ui.TemiFaceView
+import com.vms.temi.ui.WalkInActivity
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.Timer
 import java.util.TimerTask
 
@@ -30,21 +39,59 @@ class MainActivity : AppCompatActivity(),
     private lateinit var robot: Robot
     private lateinit var tvStatus: TextView
     private lateinit var tvBattery: TextView
+    private lateinit var tvClock: TextView
+    private lateinit var tvDate: TextView
+    private lateinit var tvVisitCount: TextView
+    private lateinit var tvConnectionStatus: TextView
+    private lateinit var vConnectionDot: View
     private lateinit var temiFace: TemiFaceView
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var heartbeatTimer: Timer? = null
     private var isReadyForScan = false
+
+    private val clockFmt = SimpleDateFormat("hh:mm a", Locale.getDefault())
+    private val dateFmt  = SimpleDateFormat("EEEE, dd MMM yyyy", Locale.getDefault())
+    private val clockRunnable = object : Runnable {
+        override fun run() {
+            val now = Date()
+            tvClock.text = clockFmt.format(now)
+            tvDate.text  = dateFmt.format(now)
+            mainHandler.postDelayed(this, 1000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        tvStatus  = findViewById(R.id.tvStatus)
-        tvBattery = findViewById(R.id.tvBattery)
-        temiFace  = findViewById(R.id.temiFace)
+        tvStatus           = findViewById(R.id.tvStatus)
+        tvBattery          = findViewById(R.id.tvBattery)
+        tvClock            = findViewById(R.id.tvClock)
+        tvDate             = findViewById(R.id.tvDate)
+        tvVisitCount       = findViewById(R.id.tvVisitCount)
+        tvConnectionStatus = findViewById(R.id.tvConnectionStatus)
+        vConnectionDot     = findViewById(R.id.vConnectionDot)
+        temiFace           = findViewById(R.id.temiFace)
+
+        tvVisitCount.text = visitCount.toString()
+
+        val btnScanQR = findViewById<Button>(R.id.btnScanQR)
+        btnScanQR.setOnClickListener { launchQRScan() }
+
+        findViewById<Button>(R.id.btnWalkIn).setOnClickListener {
+            startActivity(Intent(this, WalkInActivity::class.java))
+        }
+
+        // Gentle pulse animation on scan button
+        val pulseX = PropertyValuesHolder.ofFloat("scaleX", 1f, 1.07f, 1f)
+        val pulseY = PropertyValuesHolder.ofFloat("scaleY", 1f, 1.07f, 1f)
+        ObjectAnimator.ofPropertyValuesHolder(btnScanQR, pulseX, pulseY).apply {
+            duration    = 1800
+            repeatCount = ValueAnimator.INFINITE
+            repeatMode  = ValueAnimator.RESTART
+        }.start()
 
         robot = Robot.getInstance()
-
-        findViewById<View>(R.id.btnScanQR).setOnClickListener { launchQRScan() }
     }
 
     override fun onStart() {
@@ -52,6 +99,7 @@ class MainActivity : AppCompatActivity(),
         robot.addOnRobotReadyListener(this)
         robot.addOnDetectionStateChangedListener(this)
         TemiManager.hideTopBar()
+        mainHandler.post(clockRunnable)
         startHeartbeat()
         TemiSocketManager.connect(this)
     }
@@ -60,6 +108,7 @@ class MainActivity : AppCompatActivity(),
         super.onStop()
         robot.removeOnRobotReadyListener(this)
         robot.removeOnDetectionStateChangedListener(this)
+        mainHandler.removeCallbacks(clockRunnable)
         heartbeatTimer?.cancel()
     }
 
@@ -134,6 +183,10 @@ class MainActivity : AppCompatActivity(),
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_QR_SCAN) {
+            if (resultCode == RESULT_OK) {
+                visitCount++
+                runOnUiThread { tvVisitCount.text = visitCount.toString() }
+            }
             Handler(Looper.getMainLooper()).postDelayed({
                 isReadyForScan = true
                 runOnUiThread {
@@ -150,7 +203,7 @@ class MainActivity : AppCompatActivity(),
         heartbeatTimer?.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 lifecycleScope.launch {
-                    VMSApiClient.sendHeartbeat(
+                    val connected = VMSApiClient.sendHeartbeat(
                         serial = BuildConfig.TEMI_SERIAL,
                         status = "online",
                         task   = if (isReadyForScan) "waiting" else "scanning"
@@ -158,6 +211,13 @@ class MainActivity : AppCompatActivity(),
                     val battery = TemiManager.getBatteryLevel()
                     runOnUiThread {
                         if (battery >= 0) tvBattery.text = "Battery: $battery%"
+                        if (connected) {
+                            tvConnectionStatus.text = "● Connected"
+                            vConnectionDot.setBackgroundColor(Color.parseColor("#22C55E"))
+                        } else {
+                            tvConnectionStatus.text = "● Offline"
+                            vConnectionDot.setBackgroundColor(Color.parseColor("#EF4444"))
+                        }
                     }
                 }
             }
@@ -169,5 +229,6 @@ class MainActivity : AppCompatActivity(),
     companion object {
         private const val REQUEST_QR_SCAN       = 100
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
+        var visitCount = 0
     }
 }
