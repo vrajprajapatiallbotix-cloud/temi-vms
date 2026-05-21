@@ -1,9 +1,9 @@
 const { query } = require('../config/database');
-const { createQRCodeRecord } = require('../services/qrService');
-const { sendVisitorInvite, sendQRCode } = require('../services/emailService');
+const { sendVisitorInvite, sendOTPCode } = require('../services/emailService');
 const { notifyVisitRequest } = require('../services/notificationService');
 const { generateSecureToken } = require('../utils/helpers');
 const { VISIT_TYPES, VISIT_STATUS } = require('../config/constants');
+const { createOTPSession } = require('../services/otpService');
 
 // POST /visitor/preplanned — Employee creates pre-planned visit
 const createPrePlanned = async (req, res, next) => {
@@ -219,24 +219,23 @@ const submitVisitorForm = async (req, res, next) => {
         : [fullName, company, phone, visit.visitor_id]
     );
 
-    // Generate QR
-    const { token: qrToken, qrImage, expiresAt } = await createQRCodeRecord(visit.id, VISIT_TYPES.PRE_PLANNED);
-
-    // Send QR via email
+    // Generate OTP and email it to visitor
     if (visit.visitor_email) {
-      await sendQRCode({
+      const { otp, expiresAt } = await createOTPSession({
+        visitId: visit.id,
+        email: visit.visitor_email,
+        organizationId: visit.organization_id,
+      });
+      await sendOTPCode({
         visitorEmail: visit.visitor_email,
         visitorName: fullName,
-        qrImageBase64: qrImage,
+        otp,
         visitDate: visit.scheduled_at,
-        location: 'Main Reception',
-      }).catch((e) => console.error('QR email error:', e.message));
+      }).catch((e) => console.error('OTP email error:', e.message));
     }
 
     res.json({
-      message: 'Registration complete. QR code sent to your email.',
-      qrImage,
-      expiresAt,
+      message: 'Registration complete. Your OTP has been sent to your email.',
     });
   } catch (err) {
     next(err);

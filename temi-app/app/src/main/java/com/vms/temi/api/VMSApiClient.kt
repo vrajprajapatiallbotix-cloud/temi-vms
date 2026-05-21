@@ -101,4 +101,22 @@ object VMSApiClient {
             null
         }
     }
+
+    suspend fun verifyOTP(email: String, otp: String): OTPVerifyResponse = withContext(Dispatchers.IO) {
+        try {
+            val response = service.verifyOTP(OTPVerifyRequest(email, otp))
+            if (response.isSuccessful) {
+                response.body() ?: OTPVerifyResponse(false, null, "Empty response")
+            } else {
+                val errorBody = response.errorBody()?.string() ?: ""
+                val msg = try {
+                    com.google.gson.Gson().fromJson(errorBody, OTPVerifyResponse::class.java).message
+                        ?: "Verification failed"
+                } catch (_: Exception) { "Verification failed (${response.code()})" }
+                OTPVerifyResponse(false, null, "OTP_INVALID", msg)
+            }
+        } catch (e: Exception) {
+            OTPVerifyResponse(false, null, "NETWORK_ERROR", "Network error: ${e.message}")
+        }
+    }
 }

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { User, Building, Phone, Camera, CheckCircle } from 'lucide-react';
+import { User, Building, Phone, Camera, CheckCircle, KeyRound } from 'lucide-react';
 import { format } from 'date-fns';
-import QRDisplay from '../../components/common/QRDisplay';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -12,7 +11,7 @@ export default function VisitorForm() {
   const [visitInfo, setVisitInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [qrData, setQrData] = useState(null);
+  const [otpSent, setOtpSent] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [form, setForm] = useState({ fullName: '', company: '', phone: '' });
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -40,11 +39,11 @@ export default function VisitorForm() {
       Object.entries(form).forEach(([k, v]) => formData.append(k, v));
       if (photoFile) formData.append('photo', photoFile);
 
-      const { data } = await api.post(`/visitor/register/${token}`, formData, {
+      await api.post(`/visitor/register/${token}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setQrData(data);
-      toast.success('Registration complete!');
+      setOtpSent(true);
+      toast.success('Registration complete! Your OTP has been emailed.');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Registration failed');
     } finally {
@@ -73,10 +72,10 @@ export default function VisitorForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <div className="text-white text-2xl font-bold">Visitor Registration</div>
-          <p className="text-primary-200 text-sm mt-1">Complete your details to get your QR code</p>
+          <p className="text-primary-200 text-sm mt-1">Complete your details — you'll receive an OTP by email to check in</p>
         </div>
 
-        {!qrData ? (
+        {!otpSent ? (
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
             {/* Visit info header */}
             <div className="bg-primary-600 px-6 py-4">
@@ -134,15 +133,25 @@ export default function VisitorForm() {
             </form>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center space-y-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center space-y-5">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
               <CheckCircle size={32} className="text-green-600" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900">You're Registered!</h2>
             <p className="text-gray-500 text-sm">
-              Your QR code has been sent to your email. Show it to Temi robot at the reception.
+              Your 6-digit OTP has been sent to your email. Use it to check in at the reception kiosk on the day of your visit.
             </p>
-            <QRDisplay qrImage={qrData.qrImage} expiresAt={qrData.expiresAt} visitorName={form.fullName} />
+            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 text-left space-y-3">
+              <div className="flex items-center gap-2 text-indigo-700 font-semibold text-sm">
+                <KeyRound size={16} /> Check-In Instructions
+              </div>
+              <ol className="text-sm text-indigo-600 space-y-2 list-none">
+                <li className="flex items-start gap-2"><span className="font-bold">1.</span> Open the OTP email sent to your inbox</li>
+                <li className="flex items-start gap-2"><span className="font-bold">2.</span> Arrive at the reception and tap <strong>"I Have an OTP"</strong></li>
+                <li className="flex items-start gap-2"><span className="font-bold">3.</span> Enter your email and the 6-digit OTP to complete check-in</li>
+              </ol>
+            </div>
+            <p className="text-xs text-gray-400">OTP is valid for 10 minutes after your visit is confirmed. Keep this page as reference.</p>
           </div>
         )}
       </div>

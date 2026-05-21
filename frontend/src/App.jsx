@@ -12,6 +12,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import EmployeeManagement from './pages/admin/EmployeeManagement';
 import VisitorLogs from './pages/admin/VisitorLogs';
 import TemiRobotPage from './pages/admin/TemiRobotPage';
+import PlatformDashboard from './pages/platform/PlatformDashboard';
 import VisitorForm from './pages/visitor/VisitorForm';
 import ImpromptuForm from './pages/visitor/ImpromptuForm';
 import QRPage from './pages/visitor/QRPage';
@@ -65,6 +66,13 @@ export default function App() {
           </ProtectedRoute>
         } />
 
+        {/* Platform Super Admin */}
+        <Route path="/platform" element={
+          <ProtectedRoute roles={['platform_super_admin']}>
+            <PlatformDashboard />
+          </ProtectedRoute>
+        } />
+
         {/* Admin */}
         <Route path="/admin" element={
           <ProtectedRoute roles={['admin']}>
@@ -89,7 +97,13 @@ export default function App() {
 
         {/* Redirects */}
         <Route path="/" element={
-          user ? <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} /> : <Navigate to="/kiosk" />
+          user
+            ? <Navigate to={
+                user.role === 'platform_super_admin' ? '/platform'
+                : ['admin','org_admin','org_super_admin'].includes(user.role) ? '/admin'
+                : '/dashboard'
+              } />
+            : <Navigate to="/kiosk" />
         } />
         <Route path="/unauthorized" element={
           <div className="min-h-screen flex items-center justify-center">

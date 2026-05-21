@@ -114,4 +114,29 @@ const sendApprovalNotification = async ({ employeeEmail, employeeName, visitorNa
   });
 };
 
-module.exports = { sendVisitorInvite, sendQRCode, sendVisitDeclined, sendApprovalNotification };
+const sendOTPCode = async ({ visitorEmail, visitorName, otp, expiresMinutes = 10, visitDate, hostName }) => {
+  await sendEmail({
+    to: visitorEmail,
+    subject: `Your Visit OTP: ${otp}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f9f9f9;padding:20px;border-radius:8px">
+        <div style="background:#1a1a2e;padding:20px;border-radius:8px 8px 0 0;text-align:center">
+          <h1 style="color:#fff;margin:0">Visit Check-In OTP</h1>
+        </div>
+        <div style="background:#fff;padding:30px;border-radius:0 0 8px 8px;text-align:center">
+          <p style="text-align:left">Dear <strong>${visitorName}</strong>,</p>
+          <p style="text-align:left">Your visit${hostName ? ` with <strong>${hostName}</strong>` : ''} has been approved${visitDate ? ` for <strong>${new Date(visitDate).toLocaleString()}</strong>` : ''}.</p>
+          <p style="text-align:left">Use the OTP below to check in at the Temi kiosk:</p>
+          <div style="background:#1a1a2e;border-radius:12px;padding:24px;margin:24px 0;display:inline-block;min-width:220px">
+            <p style="color:#aaa;margin:0 0 8px 0;font-size:12px;letter-spacing:2px;text-transform:uppercase">Your One-Time Password</p>
+            <p style="color:#fff;font-size:48px;font-weight:bold;letter-spacing:12px;margin:0;font-family:monospace">${otp}</p>
+          </div>
+          <p style="color:#dc2626;font-size:13px">This OTP expires in <strong>${expiresMinutes} minutes</strong>. Do not share it.</p>
+          <p style="color:#666;font-size:12px;margin-top:24px">If you did not request this visit, please ignore this email.</p>
+        </div>
+      </div>
+    `,
+  });
+};
+
+module.exports = { sendVisitorInvite, sendQRCode, sendVisitDeclined, sendApprovalNotification, sendOTPCode };

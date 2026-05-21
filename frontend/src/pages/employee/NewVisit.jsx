@@ -1,27 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Calendar, Building, Mail, Phone, MapPin, FileText, ArrowLeft } from 'lucide-react';
+import { UserPlus, Calendar, Building, Mail, Phone, MapPin, FileText, ArrowLeft, Wifi } from 'lucide-react';
+import { io } from 'socket.io-client';
 import Sidebar from '../../components/common/Sidebar';
 import QRDisplay from '../../components/common/QRDisplay';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
 const TEMI_SERIAL = '00126040079';
+const FALLBACK_LOCATIONS = ['reception', 'meeting_room_a', 'meeting_room_b', 'conference_hall', 'waiting_area'];
 
 export default function NewVisit() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [locations, setLocations] = useState([]);
+  const [liveUpdate, setLiveUpdate] = useState(false);
   const [form, setForm] = useState({
     visitorName: '', visitorEmail: '', visitorPhone: '',
     visitorCompany: '', purpose: '', scheduledAt: '', meetingRoom: '', notes: '',
   });
 
   useEffect(() => {
+    // Initial fetch
     api.get(`/temi/locations/${TEMI_SERIAL}`)
-      .then(({ data }) => setLocations(data.savedRooms || []))
-      .catch(() => setLocations(['reception', 'meeting_room_a', 'meeting_room_b', 'conference_hall', 'waiting_area']));
+      .then(({ data }) => setLocations(data.savedRooms?.length ? data.savedRooms : FALLBACK_LOCATIONS))
+      .catch(() => setLocations(FALLBACK_LOCATIONS));
+
+    // Real-time location updates from Temi robot
+    const socket = io(import.meta.env.VITE_SOCKET_URL || '', { withCredentials: true });
+    socket.on('temi:locations_synced', ({ serial, locations: newLocs }) => {
+      if (serial === TEMI_SERIAL && newLocs?.length) {
+        setLocations(newLocs);
+        setLiveUpdate(true);
+        toast.success(`Temi map updated — ${newLocs.length} locations`, { duration: 3000 });
+        setTimeout(() => setLiveUpdate(false), 5000);
+      }
+    });
+
+    return () => socket.disconnect();
   }, []);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -101,11 +118,18 @@ export default function NewVisit() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Room</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
+                    Meeting Room
+                    {liveUpdate && (
+                      <span className="inline-flex items-center gap-1 text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded-full">
+                        <Wifi size={10} /> Live
+                      </span>
+                    )}
+                  </label>
                   <div className="relative">
                     <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <select value={form.meetingRoom} onChange={set('meetingRoom')} className="input pl-8">
-                      <option value="">Select room</option>
+                      <option value="">Select room ({locations.length} available)</option>
                       {locations.map((loc) => (
                         <option key={loc} value={loc}>
                           {loc.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}

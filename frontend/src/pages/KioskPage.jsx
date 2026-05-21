@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bot, QrCode, UserPlus, CalendarPlus, CheckCircle, ArrowLeft,
-  Building, Phone, FileText, Search, User, MapPin, Clock, X, Mail, Download,
+  Bot, KeyRound, UserPlus, CalendarPlus, CheckCircle, ArrowLeft,
+  Building, Phone, FileText, Search, User, MapPin, Clock, X, Mail,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import jsQR from 'jsqr';
 import { io as socketIo } from 'socket.io-client';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
@@ -26,119 +25,138 @@ function KioskClock() {
   );
 }
 
-// ─── Web QR Scanner Modal ─────────────────────────────────────────────────────
-function QRScannerModal({ onValidated, onClose }) {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const rafRef = useRef(null);
-  const streamRef = useRef(null);
-  const [phase, setPhase] = useState('starting');
+// ─── OTP Entry Modal ──────────────────────────────────────────────────────────
+function OTPEntryModal({ onValidated, onClose }) {
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [step, setStep] = useState('email'); // email → otp → validating → error
   const [errMsg, setErrMsg] = useState('');
+  const [attemptsLeft, setAttemptsLeft] = useState(3);
+  const inputRefs = useRef([]);
 
-  const stop = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-  }, []);
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStep('otp');
+    setTimeout(() => inputRefs.current[0]?.focus(), 100);
+  };
 
-  const scanFrame = useCallback(() => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
-      rafRef.current = requestAnimationFrame(scanFrame); return;
+  const handleDigit = (idx, val) => {
+    if (!/^\d*$/.test(val)) return;
+    const next = [...otp];
+    next[idx] = val.slice(-1);
+    setOtp(next);
+    if (val && idx < 5) inputRefs.current[idx + 1]?.focus();
+  };
+
+  const handleKeyDown = (idx, e) => {
+    if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
+      inputRefs.current[idx - 1]?.focus();
     }
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
-    if (code?.data) { validateToken(code.data); return; }
-    rafRef.current = requestAnimationFrame(scanFrame);
-  }, []); // eslint-disable-line
+    if (e.key === 'Enter' && otp.every((d) => d)) handleVerify();
+  };
 
-  const validateToken = async (token) => {
-    setPhase('validating');
-    stop();
-    try {
-      const { data } = await api.post('/qr/validate', { token },
-        { headers: { 'x-temi-api-key': 'temi_internal_api_key' } }
-      );
-      onValidated(data);
-    } catch (err) {
-      setErrMsg(err.response?.data?.error || 'Invalid or expired QR code');
-      setPhase('error');
+  const handlePaste = (e) => {
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (text.length === 6) {
+      setOtp(text.split(''));
+      inputRefs.current[5]?.focus();
     }
   };
 
-  const retry = useCallback(() => {
-    setPhase('scanning');
+  const handleVerify = async () => {
+    const code = otp.join('');
+    if (code.length !== 6) return;
+    setStep('validating');
     setErrMsg('');
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then((s) => {
-      streamRef.current = s;
-      videoRef.current.srcObject = s;
-      videoRef.current.play();
-      rafRef.current = requestAnimationFrame(scanFrame);
-    });
-  }, [scanFrame]);
+    try {
+      const { data } = await api.post('/otp/verify', { email: email.trim().toLowerCase(), otp: code });
+      onValidated(data);
+    } catch (err) {
+      const errorData = err.response?.data || {};
+      setErrMsg(errorData.message || 'Invalid OTP. Please try again.');
+      setAttemptsLeft(errorData.attemptsLeft ?? (attemptsLeft - 1));
+      setOtp(['', '', '', '', '', '']);
+      setStep('otp');
+      setTimeout(() => inputRefs.current[0]?.focus(), 50);
+    }
+  };
 
   useEffect(() => {
-    let alive = true;
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then((s) => {
-        if (!alive) { s.getTracks().forEach((t) => t.stop()); return; }
-        streamRef.current = s;
-        videoRef.current.srcObject = s;
-        videoRef.current.play();
-        setPhase('scanning');
-        rafRef.current = requestAnimationFrame(scanFrame);
-      })
-      .catch(() => { setErrMsg('Camera access denied. Please allow camera permissions.'); setPhase('error'); });
-    return () => { alive = false; stop(); };
-  }, [scanFrame, stop]);
+    if (otp.every((d) => d) && step === 'otp') handleVerify();
+  }, [otp]); // eslint-disable-line
 
   return (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
       <div className={`${CARD_BG} rounded-2xl overflow-hidden w-full max-w-sm border border-red-900/50 shadow-2xl`}>
         <div className="flex items-center justify-between px-5 py-3 bg-red-700">
           <div className="flex items-center gap-2 text-white font-semibold text-sm">
-            <QrCode size={16} /> Scan Your QR Code
+            <KeyRound size={16} /> Enter Your OTP
           </div>
-          <button onClick={() => { stop(); onClose(); }} className="text-white/70 hover:text-white p-1"><X size={18} /></button>
+          <button onClick={onClose} className="text-white/70 hover:text-white p-1"><X size={18} /></button>
         </div>
 
-        <div className="relative bg-black" style={{ aspectRatio: '4/3' }}>
-          <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
-          <canvas ref={canvasRef} className="hidden" />
-          {phase === 'scanning' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-48 h-48 border-2 border-red-500/70 rounded-xl relative">
-                <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-red-500 rounded-tl" />
-                <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-red-500 rounded-tr" />
-                <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-red-500 rounded-bl" />
-                <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-red-500 rounded-br" />
-                <div className="absolute inset-x-4 h-0.5 bg-red-500/60 top-1/2 animate-pulse" />
+        <div className="p-6 space-y-5">
+          {step === 'email' && (
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div>
+                <p className="text-gray-400 text-sm mb-4">Enter the email address used for your visit booking. Your OTP will be verified against it.</p>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">Email Address</label>
+                <input
+                  type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus
+                  className="w-full bg-white/5 border border-white/10 text-white placeholder-gray-600 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-red-500"
+                  placeholder="your@email.com"
+                />
               </div>
-            </div>
+              <button type="submit"
+                className="w-full bg-red-700 hover:bg-red-600 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+                Continue →
+              </button>
+            </form>
           )}
-          {(phase === 'starting' || phase === 'validating') && (
-            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
-              <div className="w-8 h-8 border-2 border-red-400 border-t-red-600 rounded-full animate-spin" />
-              <p className="text-white text-sm">{phase === 'starting' ? 'Starting camera…' : 'Validating QR code…'}</p>
-            </div>
-          )}
-          {phase === 'error' && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 px-6 text-center">
-              <div className="text-red-400 text-4xl">⚠</div>
-              <p className="text-red-300 text-sm font-medium">{errMsg}</p>
-              {!errMsg.includes('Camera') && (
-                <button onClick={retry} className="bg-red-700 text-white text-xs px-5 py-2 rounded-lg hover:bg-red-600">Try Again</button>
-              )}
-            </div>
-          )}
-        </div>
 
-        <div className="px-5 py-3 text-center">
-          <p className="text-gray-500 text-xs">Hold QR code steady inside the frame</p>
+          {(step === 'otp' || step === 'validating' || step === 'error') && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-gray-400 text-sm mb-1">Enter the 6-digit OTP sent to</p>
+                <p className="text-white font-medium text-sm truncate">{email}</p>
+              </div>
+
+              <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+                {otp.map((digit, idx) => (
+                  <input
+                    key={idx} ref={(el) => (inputRefs.current[idx] = el)}
+                    value={digit} onChange={(e) => handleDigit(idx, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(idx, e)}
+                    maxLength={1} inputMode="numeric" pattern="\d*"
+                    disabled={step === 'validating'}
+                    className="w-11 h-14 text-center text-2xl font-bold text-white bg-white/10 border-2 border-white/20 rounded-xl focus:outline-none focus:border-red-500 disabled:opacity-50 transition-colors"
+                  />
+                ))}
+              </div>
+
+              {errMsg && (
+                <div className="bg-red-900/30 border border-red-700/50 rounded-xl px-4 py-2.5 text-sm text-red-300">
+                  {errMsg}
+                  {attemptsLeft > 0 && attemptsLeft <= 2 && (
+                    <span className="block text-xs text-red-400 mt-0.5">{attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining</span>
+                  )}
+                </div>
+              )}
+
+              {step === 'validating' && (
+                <div className="flex items-center justify-center gap-2 text-red-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                  Verifying OTP…
+                </div>
+              )}
+
+              <button onClick={() => setStep('email')}
+                className="w-full text-center text-xs text-gray-600 hover:text-gray-400 transition-colors mt-2">
+                ← Change email address
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -169,33 +187,27 @@ function EmployeeSearch({ value, onChange, onSelect, selected }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const inputCls = 'w-full bg-white/5 border border-white/10 text-white placeholder-gray-600 rounded-xl px-3 py-2.5 pl-8 text-sm focus:outline-none focus:border-red-500 transition-colors';
+
   return (
     <div ref={wrapRef} className="relative">
       <div className="relative">
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
-        <input
-          value={value}
-          onChange={(e) => { onChange(e.target.value); onSelect(null); }}
+        <input value={value} onChange={(e) => { onChange(e.target.value); onSelect(null); }}
           onFocus={() => results.length && setOpen(true)}
-          className="w-full bg-white/5 border border-white/10 text-white placeholder-gray-600 rounded-xl px-3 py-2.5 pl-8 text-sm focus:outline-none focus:border-red-500 transition-colors"
-          placeholder="Type employee name…"
-          autoComplete="off"
-        />
+          className={inputCls} placeholder="Type employee name…" autoComplete="off" />
       </div>
       {open && results.length > 0 && (
         <div className={`absolute z-30 w-full ${DROPDOWN_BG} border border-red-900/40 rounded-xl shadow-2xl mt-1 max-h-44 overflow-y-auto`}>
           {results.map((emp) => (
-            <button
-              key={emp.id} type="button"
+            <button key={emp.id} type="button"
               onMouseDown={() => { onSelect(emp); onChange(emp.name); setOpen(false); }}
-              className="w-full text-left px-4 py-2.5 hover:bg-red-900/30 border-b border-white/5 last:border-0 transition-colors"
-            >
+              className="w-full text-left px-4 py-2.5 hover:bg-red-900/30 border-b border-white/5 last:border-0 transition-colors">
               <div className="text-sm font-medium text-white">{emp.name}</div>
-              <div className="text-xs text-red-400/70 flex items-center gap-1.5">
+              <div className="text-xs text-red-400/70">
                 {emp.desk_location && <span>{emp.desk_location}</span>}
-                {emp.desk_location && emp.department && <span className="text-gray-700">·</span>}
+                {emp.desk_location && emp.department && <span className="text-gray-700 mx-1">·</span>}
                 {emp.department && <span className="text-gray-600">{emp.department}</span>}
-                {!emp.desk_location && !emp.department && <span className="text-gray-700">General</span>}
               </div>
             </button>
           ))}
@@ -204,11 +216,7 @@ function EmployeeSearch({ value, onChange, onSelect, selected }) {
       {selected ? (
         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-green-400">
           <CheckCircle size={11} />
-          <span>
-            {selected.name}
-            {selected.desk_location ? ` — ${selected.desk_location}` : ''}
-            {selected.department ? ` · ${selected.department}` : ''}
-          </span>
+          <span>{selected.name}{selected.desk_location ? ` — ${selected.desk_location}` : ''}</span>
         </div>
       ) : value.length > 0 ? (
         <p className="mt-1.5 text-xs text-red-400">Select an employee from the list above</p>
@@ -228,11 +236,12 @@ function WalkInForm({ onBack, onDone }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedEmp) return toast.error('Please select an employee from the dropdown list');
+    if (!form.visitorEmail) return toast.error('Email is required to receive your OTP when approved');
     setLoading(true);
     try {
-      const { data } = await api.post('/visitor/impromptu', { ...form, employeeId: selectedEmp.id });
+      const { data } = await api.post('/otp/walk-in', { ...form, employeeId: selectedEmp.id });
       toast.success('Request submitted!');
-      onDone(selectedEmp.name, data.visit.id);
+      onDone(selectedEmp.name, data.visitId, form.visitorEmail);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Submission failed. Please try again.');
     } finally {
@@ -255,12 +264,11 @@ function WalkInForm({ onBack, onDone }) {
           </div>
           <div>
             <h2 className="text-white font-bold">Walk-In Visit Registration</h2>
-            <p className="text-red-200 text-xs">Fill in your details — the employee will be notified instantly</p>
+            <p className="text-red-200 text-xs">Fill in your details — the employee will be notified and you'll receive an OTP</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Name + Phone */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-400 mb-1.5">Your Full Name *</label>
@@ -278,18 +286,16 @@ function WalkInForm({ onBack, onDone }) {
             </div>
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">
-              Email Address <span className="text-gray-600 font-normal">(to receive QR code when approved)</span>
+              Email Address * <span className="text-gray-600 font-normal">(you'll receive your OTP here when approved)</span>
             </label>
             <div className="relative">
               <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
-              <input type="email" value={form.visitorEmail} onChange={set('visitorEmail')} className={inputCls} placeholder="you@example.com" />
+              <input type="email" value={form.visitorEmail} onChange={set('visitorEmail')} required className={inputCls} placeholder="you@example.com" />
             </div>
           </div>
 
-          {/* Company */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Company / Organisation</label>
             <div className="relative">
@@ -298,13 +304,11 @@ function WalkInForm({ onBack, onDone }) {
             </div>
           </div>
 
-          {/* Whom to meet */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Whom to Meet *</label>
             <EmployeeSearch value={empSearch} onChange={setEmpSearch} onSelect={setSelectedEmp} selected={selectedEmp} />
           </div>
 
-          {/* Purpose */}
           <div>
             <label className="block text-xs font-medium text-gray-400 mb-1.5">Purpose of Visit *</label>
             <div className="relative">
@@ -326,7 +330,7 @@ function WalkInForm({ onBack, onDone }) {
   );
 }
 
-// ─── Pre-Planned Booking Info Panel ──────────────────────────────────────────
+// ─── Pre-Planned Booking Info ─────────────────────────────────────────────────
 function PrePlannedInfo({ onBack, onGoToPortal }) {
   return (
     <div className="w-full max-w-lg">
@@ -340,7 +344,7 @@ function PrePlannedInfo({ onBack, onGoToPortal }) {
           </div>
           <div>
             <h2 className="text-white font-bold">Pre-Planned Visit Booking</h2>
-            <p className="text-red-200 text-xs">Schedule a visit in advance — visitor gets a QR code by email</p>
+            <p className="text-red-200 text-xs">Schedule a visit in advance — visitor gets an OTP by email</p>
           </div>
         </div>
 
@@ -350,8 +354,8 @@ function PrePlannedInfo({ onBack, onGoToPortal }) {
               { n: '1', title: 'Employee logs in to the Staff Portal', desc: 'Use the Staff Portal button below to sign in.' },
               { n: '2', title: 'Fill visitor & meeting details', desc: 'Enter visitor name, email, date/time, meeting room and purpose.' },
               { n: '3', title: 'System sends invite email', desc: 'Visitor receives a secure link to complete their registration.' },
-              { n: '4', title: 'Visitor gets QR code', desc: 'After registering, the visitor receives their QR code by email.' },
-              { n: '5', title: 'On arrival — scan QR at reception', desc: 'Visitor scans QR here or at the Temi robot to check in.' },
+              { n: '4', title: 'Visitor receives OTP by email', desc: 'A 6-digit OTP is emailed once the visit is approved.' },
+              { n: '5', title: 'On arrival — enter OTP at reception', desc: 'Visitor enters their email + OTP at this kiosk to check in.' },
             ].map((step) => (
               <div key={step.n} className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-red-800/50 border border-red-600/50 text-red-400 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -375,9 +379,9 @@ function PrePlannedInfo({ onBack, onGoToPortal }) {
   );
 }
 
-// ─── QR Validated Success ─────────────────────────────────────────────────────
+// ─── OTP Validated Success Screen ─────────────────────────────────────────────
 function ValidatedScreen({ data, onDone }) {
-  const { visitor, visit, host } = data;
+  const { visit } = data;
   useEffect(() => { const t = setTimeout(onDone, 25000); return () => clearTimeout(t); }, [onDone]);
   return (
     <div className="w-full max-w-md text-center space-y-5">
@@ -386,31 +390,35 @@ function ValidatedScreen({ data, onDone }) {
       </div>
       <div>
         <p className="text-red-400 text-sm font-medium tracking-wide uppercase mb-1">Check-In Successful</p>
-        <h2 className="text-4xl font-bold text-white">{visitor?.name}</h2>
-        {visitor?.company && <p className="text-red-200 mt-1">{visitor.company}</p>}
+        <h2 className="text-4xl font-bold text-white">{visit?.visitorName}</h2>
+        {visit?.visitorCompany && <p className="text-red-200 mt-1">{visit.visitorCompany}</p>}
       </div>
 
       <div className="bg-white/5 border border-red-900/30 rounded-2xl p-5 text-left space-y-3">
-        <div className="flex items-center gap-3">
-          <User size={15} className="text-red-500 flex-shrink-0" />
-          <span className="text-gray-300 text-sm">Meeting <strong className="text-white">{host?.name}</strong>
-            {host?.department && <span className="text-gray-500"> · {host.department}</span>}
-          </span>
-        </div>
-        {visit?.meetingRoom && (
+        {visit?.hostName && (
+          <div className="flex items-center gap-3">
+            <User size={15} className="text-red-500 flex-shrink-0" />
+            <span className="text-gray-300 text-sm">Meeting <strong className="text-white">{visit.hostName}</strong>
+              {visit.hostDepartment && <span className="text-gray-500"> · {visit.hostDepartment}</span>}
+            </span>
+          </div>
+        )}
+        {visit?.destination && (
           <div className="flex items-center gap-3">
             <MapPin size={15} className="text-red-500 flex-shrink-0" />
             <span className="text-gray-300 text-sm">
               Heading to <strong className="text-white">
-                {visit.meetingRoom.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                {visit.destination.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
               </strong>
             </span>
           </div>
         )}
-        <div className="flex items-center gap-3">
-          <Clock size={15} className="text-red-500 flex-shrink-0" />
-          <span className="text-gray-300 text-sm">Purpose: {visit?.purpose}</span>
-        </div>
+        {visit?.meetingRoom && (
+          <div className="flex items-center gap-3">
+            <Clock size={15} className="text-red-500 flex-shrink-0" />
+            <span className="text-gray-300 text-sm">Meeting Room: {visit.meetingRoom}</span>
+          </div>
+        )}
       </div>
 
       <div className="bg-red-900/20 border border-red-800/40 rounded-xl p-4 flex items-center gap-3">
@@ -424,37 +432,33 @@ function ValidatedScreen({ data, onDone }) {
   );
 }
 
-// ─── Walk-In Submitted (waits for QR via socket) ─────────────────────────────
-function SubmittedScreen({ employeeName, visitId, onDone }) {
-  const [approvedQR, setApprovedQR] = useState(null);
+// ─── Walk-In Submitted (waits for OTP via socket) ─────────────────────────────
+function SubmittedScreen({ employeeName, visitId, visitorEmail, onDone }) {
+  const [otpSent, setOtpSent] = useState(false);
 
-  // Connect socket, join visit room, wait for QR
   useEffect(() => {
     if (!visitId) return;
     const sock = socketIo(import.meta.env.VITE_SOCKET_URL || '', { withCredentials: true });
     sock.emit('visit:join', { visitId });
-    sock.on('visit:approved_qr', ({ qrImage, expiresAt }) => {
-      setApprovedQR({ qrImage, expiresAt });
-      toast.success('Visit approved! Your QR code is ready.');
+    sock.on('visit:approved', () => {
+      setOtpSent(true);
+      toast.success('Visit approved! OTP has been sent to your email.');
+    });
+    // Legacy event still emitted for backward compat
+    sock.on('visit:approved_qr', () => {
+      setOtpSent(true);
+      toast.success('Visit approved! OTP has been sent to your email.');
     });
     return () => sock.disconnect();
   }, [visitId]);
 
-  // Auto-reset 30s after QR appears, 2 min while waiting
   useEffect(() => {
-    const delay = approvedQR ? 30000 : 120000;
+    const delay = otpSent ? 60000 : 120000;
     const t = setTimeout(onDone, delay);
     return () => clearTimeout(t);
-  }, [approvedQR, onDone]);
+  }, [otpSent, onDone]);
 
-  const downloadQR = () => {
-    const a = document.createElement('a');
-    a.href = approvedQR.qrImage;
-    a.download = 'visit-qr.png';
-    a.click();
-  };
-
-  if (approvedQR) {
+  if (otpSent) {
     return (
       <div className="w-full max-w-md text-center space-y-5">
         <div className="w-20 h-20 bg-red-700/30 rounded-full flex items-center justify-center mx-auto border-2 border-red-500">
@@ -462,32 +466,31 @@ function SubmittedScreen({ employeeName, visitId, onDone }) {
         </div>
         <div>
           <p className="text-red-400 text-sm font-medium tracking-wide uppercase mb-1">Visit Approved!</p>
-          <h2 className="text-3xl font-bold text-white">Your QR Code</h2>
-          <p className="text-gray-400 text-sm mt-1">Show this QR at reception or scan it on this screen</p>
-        </div>
-
-        <div className="bg-white rounded-2xl p-4 inline-block mx-auto shadow-2xl">
-          <img src={approvedQR.qrImage} alt="Visit QR Code" className="w-52 h-52 mx-auto" />
-          <p className="text-gray-500 text-xs mt-2">
-            Valid until {format(new Date(approvedQR.expiresAt), 'dd MMM yyyy, hh:mm a')}
+          <h2 className="text-3xl font-bold text-white">Check Your Email</h2>
+          <p className="text-gray-400 text-sm mt-2">
+            Your 6-digit OTP has been sent to <strong className="text-white">{visitorEmail}</strong>
           </p>
         </div>
 
-        <div className="flex gap-3 justify-center">
-          <button onClick={downloadQR}
-            className="flex items-center gap-2 bg-red-700 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-sm transition-colors">
-            <Download size={15} /> Download QR
-          </button>
-          <button onClick={onDone}
-            className="bg-white/5 hover:bg-white/10 border border-red-900/40 text-white px-5 py-2.5 rounded-xl text-sm transition-colors">
-            Done
-          </button>
+        <div className="bg-white/5 border border-red-900/30 rounded-2xl p-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-red-800/50 text-red-400 text-sm font-bold flex items-center justify-center flex-shrink-0">①</div>
+            <p className="text-gray-300 text-sm text-left">Open your email and copy the 6-digit OTP</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-red-800/50 text-red-400 text-sm font-bold flex items-center justify-center flex-shrink-0">②</div>
+            <p className="text-gray-300 text-sm text-left">Tap "I Have an OTP" on the home screen</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-red-800/50 text-red-400 text-sm font-bold flex items-center justify-center flex-shrink-0">③</div>
+            <p className="text-gray-300 text-sm text-left">Enter your email and OTP to complete check-in</p>
+          </div>
         </div>
 
-        <div className="bg-red-900/20 border border-red-800/30 rounded-xl p-3 flex items-center gap-3">
-          <Bot size={22} className="text-red-500 flex-shrink-0" />
-          <p className="text-red-200 text-xs text-left">Scan the QR code above at the reception kiosk to check in and Temi will escort you.</p>
-        </div>
+        <button onClick={onDone}
+          className="bg-red-700 hover:bg-red-600 text-white px-8 py-2.5 rounded-xl text-sm transition-colors">
+          Back to Home
+        </button>
       </div>
     );
   }
@@ -505,7 +508,7 @@ function SubmittedScreen({ employeeName, visitId, onDone }) {
         {[
           ['①', `${employeeName} is being notified right now`],
           ['②', 'They will approve or decline your request'],
-          ['③', 'Your QR code will appear on this screen automatically'],
+          ['③', `Once approved, a 6-digit OTP will be emailed to ${visitorEmail}`],
         ].map(([n, t]) => (
           <div key={n} className="flex items-start gap-2 text-gray-400">
             <span className="text-red-500 font-bold flex-shrink-0">{n}</span>
@@ -531,15 +534,15 @@ function SubmittedScreen({ employeeName, visitId, onDone }) {
 function HomeScreen({ onChoice }) {
   const options = [
     {
-      id: 'qr',
-      icon: QrCode,
-      label: 'I Have a QR Code',
-      sub: 'Pre-approved visit — scan your QR code to check in',
+      id: 'otp',
+      icon: KeyRound,
+      label: 'I Have an OTP',
+      sub: 'Pre-approved visit — enter your 6-digit OTP to check in',
       border: 'hover:border-red-500',
       bg: 'hover:bg-red-900/20',
       iconBg: 'bg-red-900/40 group-hover:bg-red-700',
       iconColor: 'text-red-400 group-hover:text-white',
-      cta: 'Scan QR Code',
+      cta: 'Enter OTP',
       ctaColor: 'text-red-400',
     },
     {
@@ -574,15 +577,11 @@ function HomeScreen({ onChoice }) {
         <h1 className="text-5xl font-bold text-white mb-3">Welcome!</h1>
         <p className="text-red-300 text-lg">How can we help you today?</p>
       </div>
-
       <div className="grid grid-cols-3 gap-5">
         {options.map((opt) => (
-          <button
-            key={opt.id}
-            onClick={() => onChoice(opt.id)}
+          <button key={opt.id} onClick={() => onChoice(opt.id)}
             className={`group bg-white/3 border-2 border-white/8 ${opt.border} ${opt.bg} rounded-2xl p-7 text-left transition-all duration-200 hover:shadow-2xl hover:-translate-y-1`}
-            style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}
-          >
+            style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.06)' }}>
             <div className={`w-14 h-14 rounded-2xl ${opt.iconBg} flex items-center justify-center mb-5 transition-colors duration-200`}>
               <opt.icon size={28} className={`${opt.iconColor} transition-colors duration-200`} />
             </div>
@@ -602,22 +601,28 @@ function HomeScreen({ onChoice }) {
 export default function KioskPage() {
   const navigate = useNavigate();
   const [screen, setScreen] = useState('home');
-  const [showScanner, setShowScanner] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
   const [validatedData, setValidatedData] = useState(null);
   const [submittedEmp, setSubmittedEmp] = useState('');
   const [submittedVisitId, setSubmittedVisitId] = useState(null);
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
-  const reset = () => { setScreen('home'); setValidatedData(null); setSubmittedEmp(''); setSubmittedVisitId(null); };
+  const reset = () => {
+    setScreen('home');
+    setValidatedData(null);
+    setSubmittedEmp('');
+    setSubmittedVisitId(null);
+    setSubmittedEmail('');
+  };
 
   const handleChoice = (id) => {
-    if (id === 'qr') setShowScanner(true);
+    if (id === 'otp') setShowOTPModal(true);
     else setScreen(id);
   };
 
   return (
     <div className="min-h-screen flex flex-col text-white select-none" style={{ background: BG }}>
 
-      {/* Top bar */}
       <header className="flex items-center justify-between px-8 py-4 border-b border-red-900/30 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-700 flex items-center justify-center shadow-lg">
@@ -631,23 +636,33 @@ export default function KioskPage() {
         <KioskClock />
       </header>
 
-      {/* Content */}
       <main className="flex-1 flex items-center justify-center p-8">
         {screen === 'home' && <HomeScreen onChoice={handleChoice} />}
         {screen === 'walkin' && (
           <WalkInForm
             onBack={reset}
-            onDone={(emp, visitId) => { setSubmittedEmp(emp); setSubmittedVisitId(visitId); setScreen('submitted'); }}
+            onDone={(emp, visitId, email) => {
+              setSubmittedEmp(emp);
+              setSubmittedVisitId(visitId);
+              setSubmittedEmail(email);
+              setScreen('submitted');
+            }}
           />
         )}
         {screen === 'preplanned' && (
           <PrePlannedInfo onBack={reset} onGoToPortal={() => navigate('/login')} />
         )}
-        {screen === 'submitted' && <SubmittedScreen employeeName={submittedEmp} visitId={submittedVisitId} onDone={reset} />}
+        {screen === 'submitted' && (
+          <SubmittedScreen
+            employeeName={submittedEmp}
+            visitId={submittedVisitId}
+            visitorEmail={submittedEmail}
+            onDone={reset}
+          />
+        )}
         {screen === 'validated' && validatedData && <ValidatedScreen data={validatedData} onDone={reset} />}
       </main>
 
-      {/* Footer */}
       <footer className="px-8 py-3 border-t border-red-900/20 flex items-center justify-between text-xs text-gray-700 flex-shrink-0">
         <span>Temi · Serial: 00126040079</span>
         <button onClick={() => navigate('/login')} className="text-gray-700 hover:text-red-500 transition-colors underline underline-offset-2">
@@ -656,11 +671,10 @@ export default function KioskPage() {
         <span>For help, contact security desk</span>
       </footer>
 
-      {/* QR Scanner Modal */}
-      {showScanner && (
-        <QRScannerModal
-          onValidated={(data) => { setShowScanner(false); setValidatedData(data); setScreen('validated'); }}
-          onClose={() => setShowScanner(false)}
+      {showOTPModal && (
+        <OTPEntryModal
+          onValidated={(data) => { setShowOTPModal(false); setValidatedData(data); setScreen('validated'); }}
+          onClose={() => setShowOTPModal(false)}
         />
       )}
     </div>

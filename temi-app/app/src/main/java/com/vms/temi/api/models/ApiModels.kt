@@ -74,6 +74,28 @@ data class WalkInVisitData(val id: Long = 0)
 
 data class WalkInResponse(
     val visit: WalkInVisitData? = null,
+    @com.google.gson.annotations.SerializedName("visitId") val visitId: Long? = null,
     val message: String? = null,
     val error: String? = null
+)
+
+// OTP
+data class OTPVerifyRequest(val email: String, val otp: String)
+
+data class OTPVisitInfo(
+    val id: Long,
+    val visitorName: String?,
+    val visitorCompany: String?,
+    val hostName: String?,
+    val hostDepartment: String?,
+    val destination: String?,
+    val meetingRoom: String?
+)
+
+data class OTPVerifyResponse(
+    val valid: Boolean,
+    val visit: OTPVisitInfo?,
+    val error: String? = null,
+    val message: String? = null,
+    val attemptsLeft: Int? = null
 )

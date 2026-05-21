@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#CC0000</item>
+        <item name="colorPrimaryDark">#990000</item>
+        <item name="colorAccent">#FF4444</item>
+    </style>
+
+    <style name="OTPDigitBox">
+        <item name="android:layout_width">52dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_marginHorizontal">4dp</item>
+        <item name="android:inputType">numberDecimal</item>
+        <item name="android:maxLength">1</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textAlignment">center</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">@drawable/otp_digit_bg</item>
+        <item name="android:imeOptions">flagNoFullscreen</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

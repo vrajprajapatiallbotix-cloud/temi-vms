@@ -207,12 +207,12 @@
                     android:paddingTop="7dp"
                     android:paddingBottom="7dp"/>
 
-                <!-- Pulsing scan button -->
+                <!-- OTP Check-In button (primary) -->
                 <Button
-                    android:id="@+id/btnScanQR"
+                    android:id="@+id/btnEnterOTP"
                     android:layout_width="220dp"
                     android:layout_height="50dp"
-                    android:text="SCAN QR CODE"
+                    android:text="ENTER OTP"
                     android:textSize="14sp"
                     android:letterSpacing="0.08"
                     android:textColor="#FFFFFF"
@@ -223,7 +223,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Have a QR code from your approval email"
+                    android:text="Have an OTP from your approval email"
                     android:textSize="10sp"
                     android:textColor="#5a0000"
                     android:layout_marginTop="6dp"/>
@@ -251,7 +251,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="No QR? Register here for an impromptu visit"
+                    android:text="No OTP? Register here for an impromptu visit"
                     android:textSize="10sp"
                     android:textColor="#5a0000"
                     android:layout_marginTop="6dp"/>

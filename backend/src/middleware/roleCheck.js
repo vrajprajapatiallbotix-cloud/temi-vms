@@ -10,8 +10,12 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
-const requireAdmin = requireRole(ROLES.ADMIN);
-const requireEmployee = requireRole(ROLES.ADMIN, ROLES.EMPLOYEE);
-const requireSecurity = requireRole(ROLES.ADMIN, ROLES.SECURITY);
+// Hierarchical — each level inherits access of levels below it
+const requirePlatformAdmin = requireRole(ROLES.PLATFORM_SUPER_ADMIN);
+const requireOrgSuperAdmin = requireRole(ROLES.PLATFORM_SUPER_ADMIN, ROLES.ORG_SUPER_ADMIN);
+const requireOrgAdmin      = requireRole(ROLES.PLATFORM_SUPER_ADMIN, ROLES.ORG_SUPER_ADMIN, ROLES.ORG_ADMIN, ROLES.ADMIN);
+const requireAdmin         = requireRole(ROLES.PLATFORM_SUPER_ADMIN, ROLES.ORG_SUPER_ADMIN, ROLES.ORG_ADMIN, ROLES.ADMIN);
+const requireEmployee      = requireRole(ROLES.PLATFORM_SUPER_ADMIN, ROLES.ORG_SUPER_ADMIN, ROLES.ORG_ADMIN, ROLES.ADMIN, ROLES.EMPLOYEE);
+const requireSecurity      = requireRole(ROLES.PLATFORM_SUPER_ADMIN, ROLES.ORG_SUPER_ADMIN, ROLES.ORG_ADMIN, ROLES.ADMIN, ROLES.EMPLOYEE, ROLES.SECURITY);
 
-module.exports = { requireRole, requireAdmin, requireEmployee, requireSecurity };
+module.exports = { requireRole, requirePlatformAdmin, requireOrgSuperAdmin, requireOrgAdmin, requireAdmin, requireEmployee, requireSecurity };

@@ -21,6 +21,7 @@ import com.vms.temi.api.VMSApiClient
 import com.vms.temi.socket.TemiSocketManager
 import com.vms.temi.temi.TemiManager
 import com.vms.temi.ui.FaceState
+import com.vms.temi.ui.OTPInputActivity
 import com.vms.temi.ui.QRScanActivity
 import com.vms.temi.ui.TemiFaceView
 import com.vms.temi.ui.WalkInActivity
@@ -75,17 +76,17 @@ class MainActivity : AppCompatActivity(),
 
         tvVisitCount.text = visitCount.toString()
 
-        val btnScanQR = findViewById<Button>(R.id.btnScanQR)
-        btnScanQR.setOnClickListener { launchQRScan() }
+        val btnEnterOTP = findViewById<Button>(R.id.btnEnterOTP)
+        btnEnterOTP.setOnClickListener { launchOTPEntry() }
 
         findViewById<Button>(R.id.btnWalkIn).setOnClickListener {
             startActivity(Intent(this, WalkInActivity::class.java))
         }
 
-        // Gentle pulse animation on scan button
+        // Gentle pulse animation on OTP button
         val pulseX = PropertyValuesHolder.ofFloat("scaleX", 1f, 1.07f, 1f)
         val pulseY = PropertyValuesHolder.ofFloat("scaleY", 1f, 1.07f, 1f)
-        ObjectAnimator.ofPropertyValuesHolder(btnScanQR, pulseX, pulseY).apply {
+        ObjectAnimator.ofPropertyValuesHolder(btnEnterOTP, pulseX, pulseY).apply {
             duration    = 1800
             repeatCount = ValueAnimator.INFINITE
             repeatMode  = ValueAnimator.RESTART
@@ -124,7 +125,7 @@ class MainActivity : AppCompatActivity(),
         TemiManager.setVolume(8)
         runOnUiThread {
             temiFace.faceState = FaceState.IDLE
-            updateStatus("Ready — Scan your QR code")
+            updateStatus("Ready — Enter your OTP to check in")
         }
 
         Handler(Looper.getMainLooper()).postDelayed({
@@ -153,11 +154,11 @@ class MainActivity : AppCompatActivity(),
                 isReadyForScan = false
                 runOnUiThread {
                     temiFace.faceState = FaceState.GREETING
-                    updateStatus("Visitor detected — Please scan QR code")
+                    updateStatus("Visitor detected — Please enter your OTP")
                 }
                 Handler(Looper.getMainLooper()).postDelayed({
-                    TemiManager.speakScanPrompt()
-                    Handler(Looper.getMainLooper()).postDelayed({ launchQRScan() }, 3000)
+                    TemiManager.speakOTPPrompt()
+                    Handler(Looper.getMainLooper()).postDelayed({ launchOTPEntry() }, 3000)
                 }, 500)
             }
             OnDetectionStateChangedListener.LOST -> {
@@ -167,7 +168,7 @@ class MainActivity : AppCompatActivity(),
                         isReadyForScan = true
                         runOnUiThread {
                             temiFace.faceState = FaceState.IDLE
-                            updateStatus("Ready — Scan your QR code")
+                            updateStatus("Ready — Enter your OTP to check in")
                         }
                     }, 5000)
                 }
@@ -175,14 +176,14 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
-    private fun launchQRScan() {
-        startActivityForResult(Intent(this, QRScanActivity::class.java), REQUEST_QR_SCAN)
-        updateStatus("Scanning QR code…")
+    private fun launchOTPEntry() {
+        startActivityForResult(Intent(this, OTPInputActivity::class.java), REQUEST_OTP)
+        updateStatus("Entering OTP…")
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_QR_SCAN) {
+        if (requestCode == REQUEST_OTP) {
             if (resultCode == RESULT_OK) {
                 visitCount++
                 runOnUiThread { tvVisitCount.text = visitCount.toString() }
@@ -191,7 +192,7 @@ class MainActivity : AppCompatActivity(),
                 isReadyForScan = true
                 runOnUiThread {
                     temiFace.faceState = FaceState.IDLE
-                    updateStatus("Ready — Scan your QR code")
+                    updateStatus("Ready — Enter your OTP to check in")
                 }
                 TemiManager.startDetection()
             }, 10_000)
@@ -227,7 +228,7 @@ class MainActivity : AppCompatActivity(),
     private fun updateStatus(msg: String) = runOnUiThread { tvStatus.text = msg }
 
     companion object {
-        private const val REQUEST_QR_SCAN       = 100
+        private const val REQUEST_OTP           = 100
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
         var visitCount = 0
     }

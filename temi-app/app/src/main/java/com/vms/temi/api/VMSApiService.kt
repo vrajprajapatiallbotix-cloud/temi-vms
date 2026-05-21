@@ -29,4 +29,7 @@ interface VMSApiService {
 
     @POST("visitor/impromptu")
     suspend fun submitWalkIn(@Body request: WalkInRequest): Response<WalkInResponse>
+
+    @POST("otp/verify")
+    suspend fun verifyOTP(@Body request: OTPVerifyRequest): Response<OTPVerifyResponse>
 }

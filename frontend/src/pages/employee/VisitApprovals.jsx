@@ -3,7 +3,6 @@ import { CheckCircle, XCircle, Clock, User, Building, Phone, MapPin } from 'luci
 import { formatDistanceToNow } from 'date-fns';
 import Sidebar from '../../components/common/Sidebar';
 import StatusBadge from '../../components/common/StatusBadge';
-import QRDisplay from '../../components/common/QRDisplay';
 import NotificationBell from '../../components/common/NotificationBell';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import api from '../../api/axios';
@@ -125,7 +124,7 @@ export default function VisitApprovals({ socket }) {
   const [allVisits, setAllVisits] = useState([]);
   const [locations, setLocations] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
-  const [approvedQR, setApprovedQR] = useState(null);
+  const [approvedMsg, setApprovedMsg] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -147,23 +146,31 @@ export default function VisitApprovals({ socket }) {
 
   useEffect(() => {
     api.get(`/temi/locations/${TEMI_SERIAL}`)
-      .then(({ data }) => setLocations(data.savedRooms || []))
+      .then(({ data }) => setLocations(data.savedRooms?.length ? data.savedRooms : ['reception', 'meeting_room_a', 'meeting_room_b', 'conference_hall', 'waiting_area']))
       .catch(() => setLocations(['reception', 'meeting_room_a', 'meeting_room_b', 'conference_hall', 'waiting_area']));
   }, []);
 
   useEffect(() => {
     if (!socket) return;
     socket.on('visit:request', fetchData);
-    return () => socket.off('visit:request', fetchData);
+    // Live location sync from Temi robot
+    socket.on('temi:locations_synced', ({ serial, locations: newLocs }) => {
+      if (serial === TEMI_SERIAL && newLocs?.length) setLocations(newLocs);
+    });
+    return () => {
+      socket.off('visit:request', fetchData);
+      socket.off('temi:locations_synced');
+    };
   }, [socket, fetchData]);
 
   const handleAction = async (visitId, action, reason, meetingRoom) => {
     try {
       const { data } = await api.post('/employee/approve', { visitId, action, declineReason: reason, meetingRoom });
-      toast.success(action === 'approve' ? 'Visit approved! QR sent to visitor.' : 'Visit declined.');
-      if (action === 'approve' && data.qrImage) {
-        setApprovedQR({ qrImage: data.qrImage, expiresAt: data.expiresAt });
-      }
+      const msg = action === 'approve'
+        ? (data.otpSent ? 'Visit approved! OTP sent to visitor email.' : 'Visit approved.')
+        : 'Visit declined.';
+      toast.success(msg);
+      if (action === 'approve') setApprovedMsg(msg);
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Action failed');
@@ -189,15 +196,17 @@ export default function VisitApprovals({ socket }) {
         </div>
 
         <div className="p-6">
-          {approvedQR && (
-            <div className="mb-6 card bg-green-50 border-green-200">
-              <div className="flex items-start gap-4">
-                <QRDisplay qrImage={approvedQR.qrImage} expiresAt={approvedQR.expiresAt} visitorName="Approved Visitor" />
-                <div>
-                  <h3 className="font-semibold text-green-900">Visit Approved!</h3>
-                  <p className="text-sm text-green-700 mt-1">QR code has been sent to the visitor's email. They can also scan below.</p>
-                  <button onClick={() => setApprovedQR(null)} className="mt-3 text-sm text-green-600 hover:underline">Dismiss</button>
+          {approvedMsg && (
+            <div className="mb-6 card bg-green-50 border border-green-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CheckCircle size={20} className="text-green-600" />
+                  <div>
+                    <h3 className="font-semibold text-green-900">Visit Approved!</h3>
+                    <p className="text-sm text-green-700 mt-0.5">OTP has been emailed to the visitor. They should check their inbox to check in.</p>
+                  </div>
                 </div>
+                <button onClick={() => setApprovedMsg(null)} className="text-green-600 hover:text-green-800 text-sm underline">Dismiss</button>
               </div>
             </div>
           )}

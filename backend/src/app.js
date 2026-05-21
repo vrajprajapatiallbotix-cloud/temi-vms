@@ -15,10 +15,14 @@ const employeeRoutes = require('./routes/employee');
 const adminRoutes = require('./routes/admin');
 const qrRoutes = require('./routes/qr');
 const temiRoutes = require('./routes/temi');
+const otpRoutes = require('./routes/otp');
+const platformRoutes = require('./routes/platform');
+const organizationRoutes = require('./routes/organization');
 const errorHandler = require('./middleware/errorHandler');
 const { initializeSocket } = require('./services/notificationService');
 const { setIo } = require('./controllers/temiController');
 const { setIo: setQrIo } = require('./controllers/qrController');
+const { setIo: setOtpIo } = require('./controllers/otpController');
 
 const app = express();
 const httpServer = createServer(app);
@@ -54,6 +58,7 @@ const io = new Server(httpServer, {
 initializeSocket(io);
 setIo(io);
 setQrIo(io);
+setOtpIo(io);
 
 app.use(helmet({ crossOriginEmbedderPolicy: false }));
 app.use(cors({
@@ -79,6 +84,9 @@ app.use('/api/employee', employeeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/temi', temiRoutes);
+app.use('/api/otp', otpRoutes);
+app.use('/api/platform', platformRoutes);
+app.use('/api/org', organizationRoutes);
 
 app.get('/health', (req, res) =>
   res.json({ status: 'ok', timestamp: new Date().toISOString(), service: 'Temi VMS API' })

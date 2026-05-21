@@ -1,8 +1,8 @@
 const { query } = require('../config/database');
-const { createQRCodeRecord } = require('../services/qrService');
-const { sendQRCode, sendVisitDeclined } = require('../services/emailService');
+const { sendOTPCode, sendVisitDeclined } = require('../services/emailService');
 const { notifyVisitApproved, emitToVisit } = require('../services/notificationService');
-const { VISIT_STATUS, VISIT_TYPES } = require('../config/constants');
+const { createOTPSession } = require('../services/otpService');
+const { VISIT_STATUS } = require('../config/constants');
 
 // GET /employee/visits — upcoming + recent visits
 const getVisits = async (req, res, next) => {
@@ -128,18 +128,21 @@ const approveVisit = async (req, res, next) => {
           : [VISIT_STATUS.APPROVED, req.user.id, visitId]
       );
 
-      // Generate QR code
-      const { qrImage, expiresAt } = await createQRCodeRecord(visitId, VISIT_TYPES.IMPROMPTU);
-
-      // Send QR to visitor
+      // Generate OTP and email it to visitor
+      let otpSent = false;
       if (visit.visitor_email) {
-        await sendQRCode({
+        const { otp, expiresAt } = await createOTPSession({
+          visitId: parseInt(visitId),
+          email: visit.visitor_email,
+          organizationId: visit.organization_id || req.user.organization_id,
+        });
+        await sendOTPCode({
           visitorEmail: visit.visitor_email,
           visitorName: visit.visitor_name,
-          qrImageBase64: qrImage,
-          visitDate: new Date(),
-          location: 'Main Reception',
-        }).catch((e) => console.error('QR email error:', e.message));
+          otp,
+          hostName: req.user.name,
+        }).catch((e) => console.error('OTP email error:', e.message));
+        otpSent = true;
       }
 
       await notifyVisitApproved({
@@ -149,8 +152,8 @@ const approveVisit = async (req, res, next) => {
         visitorName: visit.visitor_name,
       });
 
-      // Push QR to kiosk screen so the visitor sees it immediately
-      emitToVisit(visitId, 'visit:approved_qr', { qrImage, expiresAt });
+      // Notify kiosk that visit was approved (visitor can now use OTP)
+      emitToVisit(visitId, 'visit:approved', { visitId, otpSent });
 
       await query(
         `INSERT INTO audit_logs (action, entity_type, entity_id, performed_by, metadata)
@@ -158,7 +161,7 @@ const approveVisit = async (req, res, next) => {
         [visitId, req.user.id, JSON.stringify({ visitorName: visit.visitor_name })]
       );
 
-      res.json({ message: 'Visit approved. QR code sent to visitor.', qrImage, expiresAt });
+      res.json({ message: 'Visit approved. OTP sent to visitor email.', otpSent });
     } else {
       await query(
         'UPDATE visits SET status = $1, declined_reason = $2 WHERE id = $3',

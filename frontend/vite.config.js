@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     host: true,
     // Allow Codespaces *.app.github.dev domains
-    allowedHosts: 'all',
+    allowedHosts: true,
     proxy: {
       '/api': { target: 'http://localhost:5000', changeOrigin: true },
       '/socket.io': { target: 'http://localhost:5000', changeOrigin: true, ws: true },

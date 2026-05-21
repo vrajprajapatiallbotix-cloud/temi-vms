@@ -44,6 +44,9 @@
         <activity android:name=".ui.WalkInActivity"
             android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".ui.OTPInputActivity"
+            android:screenOrientation="landscape"
+            android:windowSoftInputMode="adjustResize"/>
 
     </application>
 </manifest>

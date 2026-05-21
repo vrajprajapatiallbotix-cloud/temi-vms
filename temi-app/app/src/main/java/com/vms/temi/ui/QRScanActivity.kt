@@ -3,15 +3,20 @@ package com.vms.temi.ui
 import android.Manifest
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
-import android.util.Size
+import android.view.Surface
 import android.view.View
 import android.view.animation.LinearInterpolator
+import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
@@ -36,23 +41,31 @@ import java.util.concurrent.Executors
 class QRScanActivity : AppCompatActivity() {
 
     private val TAG = "TemiVMS_QRScan"
+
     private lateinit var previewView: PreviewView
     private lateinit var tvInstruction: TextView
     private lateinit var tvScanStatus: TextView
     private lateinit var tvCountdown: TextView
     private lateinit var scanOverlay: View
     private lateinit var scanLine: View
+    private lateinit var scanFlash: View
+    private lateinit var btnTorch: Button
+    private lateinit var btnManualEntry: Button
+
     private lateinit var cameraExecutor: ExecutorService
+    private var cameraControl: CameraControl? = null
+    private var torchEnabled = false
+
     private val countdownHandler = Handler(Looper.getMainLooper())
     private var isProcessing = false
     private var hasScanned = false
 
-    // Scanner created once and reused every frame
     private val barcodeScanner by lazy {
-        val options = BarcodeScannerOptions.Builder()
-            .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-            .build()
-        BarcodeScanning.getClient(options)
+        BarcodeScanning.getClient(
+            BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE, Barcode.FORMAT_ALL_FORMATS)
+                .build()
+        )
     }
 
     companion object {
@@ -63,21 +76,24 @@ class QRScanActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_qr_scan)
 
-        previewView   = findViewById(R.id.previewView)
-        tvInstruction = findViewById(R.id.tvInstruction)
-        tvScanStatus  = findViewById(R.id.tvScanStatus)
-        tvCountdown   = findViewById(R.id.tvCountdown)
-        scanOverlay   = findViewById(R.id.scanOverlay)
-        scanLine      = findViewById(R.id.scanLine)
+        previewView     = findViewById(R.id.previewView)
+        tvInstruction   = findViewById(R.id.tvInstruction)
+        tvScanStatus    = findViewById(R.id.tvScanStatus)
+        tvCountdown     = findViewById(R.id.tvCountdown)
+        scanOverlay     = findViewById(R.id.scanOverlay)
+        scanLine        = findViewById(R.id.scanLine)
+        scanFlash       = findViewById(R.id.scanFlash)
+        btnTorch        = findViewById(R.id.btnTorch)
+        btnManualEntry  = findViewById(R.id.btnManualEntry)
 
         cameraExecutor = Executors.newSingleThreadExecutor()
 
+        btnTorch.setOnClickListener { toggleTorch() }
+        btnManualEntry.setOnClickListener { showManualEntryDialog() }
+
         TemiManager.speakScanPrompt()
 
-        // Start scan line animation after layout is measured
         scanLine.post { startScanLineAnim() }
-
-        // 60-second countdown
         startCountdown()
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
@@ -85,28 +101,17 @@ class QRScanActivity : AppCompatActivity() {
         ) {
             startCamera()
         } else {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.CAMERA),
-                REQUEST_CAMERA_PERMISSION
-            )
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Camera permission granted — starting camera")
                 startCamera()
             } else {
-                Log.e(TAG, "Camera permission denied")
-                updateInstruction("Camera permission denied. Please grant camera access in Settings.")
-                Handler(Looper.getMainLooper()).postDelayed({ finish() }, 4_000)
+                updateInstruction("Camera permission denied — use Enter Code instead")
             }
         }
     }
@@ -117,40 +122,49 @@ class QRScanActivity : AppCompatActivity() {
             try {
                 val cameraProvider = cameraProviderFuture.get()
 
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
+                // KEY FIX: get actual display rotation so CameraX corrects the frame orientation.
+                // Temi is landscape-locked; without this, rotationDegrees returns 0 and
+                // ML Kit sees a 90°-rotated frame that it cannot decode.
+                val displayRotation = display?.rotation ?: Surface.ROTATION_0
+
+                val preview = Preview.Builder()
+                    .setTargetRotation(displayRotation)
+                    .build()
+                    .also { it.setSurfaceProvider(previewView.surfaceProvider) }
 
                 val imageAnalyzer = ImageAnalysis.Builder()
-                    .setTargetResolution(Size(1280, 720))
+                    .setTargetRotation(displayRotation)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                     .build()
                     .also { analysis ->
                         analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                            if (!isProcessing && !hasScanned) {
-                                processImage(imageProxy)
-                            } else {
-                                imageProxy.close()
-                            }
+                            if (!isProcessing && !hasScanned) processImage(imageProxy)
+                            else imageProxy.close()
                         }
                     }
 
                 cameraProvider.unbindAll()
 
-                // Temi V3 uses front camera — try front first, fall back to back
-                val cameraSelector = if (cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA))
-                    CameraSelector.DEFAULT_FRONT_CAMERA
-                else
-                    CameraSelector.DEFAULT_BACK_CAMERA
+                // Temi's visitor-facing camera is the front camera.
+                // Fall back to back camera if front is unavailable.
+                val selector = when {
+                    cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA) ->
+                        CameraSelector.DEFAULT_FRONT_CAMERA
+                    cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA) ->
+                        CameraSelector.DEFAULT_BACK_CAMERA
+                    else -> throw IllegalStateException("No camera available")
+                }
 
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
-                Log.d(TAG, "Camera started with selector: $cameraSelector")
-                updateStatus("Camera ready — hold QR code in front")
+                val camera = cameraProvider.bindToLifecycle(this, selector, preview, imageAnalyzer)
+                cameraControl = camera.cameraControl
+                Log.d(TAG, "Camera bound — rotation=$displayRotation selector=$selector")
+                updateStatus("Ready — hold QR code inside the frame")
 
             } catch (e: Exception) {
                 Log.e(TAG, "Camera start failed: ${e.message}")
-                updateInstruction("Camera failed to open: ${e.message}")
+                updateStatus("Camera failed — use Enter Code button")
+                updateInstruction("Camera unavailable: ${e.message}")
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -158,32 +172,22 @@ class QRScanActivity : AppCompatActivity() {
     @androidx.annotation.OptIn(ExperimentalGetImage::class)
     private fun processImage(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
-        if (mediaImage == null) {
-            imageProxy.close()
-            return
-        }
+        if (mediaImage == null) { imageProxy.close(); return }
 
         isProcessing = true
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
 
         barcodeScanner.process(image)
             .addOnSuccessListener { barcodes ->
-                if (barcodes.isNotEmpty()) {
-                    Log.d(TAG, "Detected ${barcodes.size} barcode(s)")
-                }
-                for (barcode in barcodes) {
-                    val raw = barcode.rawValue
-                    Log.d(TAG, "Barcode format=${barcode.format} value=${raw?.take(40)}")
-                    if (raw != null && !hasScanned) {
-                        hasScanned = true
-                        handleQRToken(raw)
-                        return@addOnSuccessListener
-                    }
+                val raw = barcodes.firstOrNull { !it.rawValue.isNullOrBlank() }?.rawValue
+                if (raw != null && !hasScanned) {
+                    hasScanned = true
+                    flashScanFrame()
+                    vibrate()
+                    handleQRToken(raw)
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Barcode scan failed: ${e.message}")
-            }
+            .addOnFailureListener { e -> Log.w(TAG, "Scan failed: ${e.message}") }
             .addOnCompleteListener {
                 isProcessing = false
                 imageProxy.close()
@@ -191,66 +195,102 @@ class QRScanActivity : AppCompatActivity() {
     }
 
     private fun handleQRToken(token: String) {
-        Log.d(TAG, "QR scanned — validating token: ${token.take(30)}...")
-        updateInstruction("Validating QR code...")
-        updateStatus("Please wait...")
+        Log.d(TAG, "QR token: ${token.take(40)}")
+        updateInstruction("QR detected — validating…")
+        updateStatus("Please wait…")
         TemiManager.speakValidating()
 
         lifecycleScope.launch {
             val result = VMSApiClient.validateQR(token)
             runOnUiThread {
-                if (result.valid && result.visitor != null) {
-                    onValidQR(result)
-                } else {
-                    onInvalidQR(result)
-                }
+                if (result.valid && result.visitor != null) onValidQR(result)
+                else onInvalidQR(result)
             }
         }
     }
 
     private fun onValidQR(result: QRValidateResponse) {
-        Log.d(TAG, "Valid QR — Visitor: ${result.visitor?.name}")
-        val intent = Intent(this, VisitorDisplayActivity::class.java).apply {
-            putExtra(VisitorDisplayActivity.EXTRA_VISITOR_NAME, result.visitor?.name)
-            putExtra(VisitorDisplayActivity.EXTRA_VISITOR_COMPANY, result.visitor?.company)
-            putExtra(VisitorDisplayActivity.EXTRA_HOST_NAME, result.host?.name)
-            putExtra(VisitorDisplayActivity.EXTRA_HOST_DEPARTMENT, result.host?.department)
-            putExtra(VisitorDisplayActivity.EXTRA_MEETING_ROOM, result.visit?.meetingRoom)
-            putExtra(VisitorDisplayActivity.EXTRA_VISIT_ID, result.visit?.id)
-            putExtra(VisitorDisplayActivity.EXTRA_DESTINATION, result.navigation?.destination)
-            putExtra(VisitorDisplayActivity.EXTRA_NAV_INSTRUCTION, result.navigation?.instruction)
-        }
         setResult(RESULT_OK)
-        startActivity(intent)
+        startActivity(Intent(this, VisitorDisplayActivity::class.java).apply {
+            putExtra(VisitorDisplayActivity.EXTRA_VISITOR_NAME,    result.visitor?.name)
+            putExtra(VisitorDisplayActivity.EXTRA_VISITOR_COMPANY, result.visitor?.company)
+            putExtra(VisitorDisplayActivity.EXTRA_HOST_NAME,       result.host?.name)
+            putExtra(VisitorDisplayActivity.EXTRA_HOST_DEPARTMENT, result.host?.department)
+            putExtra(VisitorDisplayActivity.EXTRA_MEETING_ROOM,    result.visit?.meetingRoom)
+            putExtra(VisitorDisplayActivity.EXTRA_VISIT_ID,        result.visit?.id)
+            putExtra(VisitorDisplayActivity.EXTRA_DESTINATION,     result.navigation?.destination)
+            putExtra(VisitorDisplayActivity.EXTRA_NAV_INSTRUCTION, result.navigation?.instruction)
+        })
         finish()
     }
 
     private fun onInvalidQR(result: QRValidateResponse) {
-        Log.w(TAG, "Invalid QR: ${result.error} (code: ${result.code})")
-        lifecycleScope.launch {
-            VMSApiClient.reportError(
-                serial = BuildConfig.TEMI_SERIAL,
-                errorType = result.code ?: "QR_INVALID",
-                visitId = null,
-                message = result.error ?: "QR validation failed"
-            )
-        }
+        Log.w(TAG, "Invalid QR: ${result.error} (${result.code})")
         TemiManager.speakQRError(result.code ?: "QR_INVALID")
-        val intent = Intent(this, ErrorActivity::class.java).apply {
-            putExtra(ErrorActivity.EXTRA_ERROR_CODE, result.code ?: "QR_INVALID")
-            putExtra(ErrorActivity.EXTRA_ERROR_MESSAGE, result.error)
+        lifecycleScope.launch {
+            VMSApiClient.reportError(BuildConfig.TEMI_SERIAL, result.code ?: "QR_INVALID", null, result.error ?: "")
         }
-        startActivity(intent)
+        startActivity(Intent(this, ErrorActivity::class.java).apply {
+            putExtra(ErrorActivity.EXTRA_ERROR_CODE,    result.code ?: "QR_INVALID")
+            putExtra(ErrorActivity.EXTRA_ERROR_MESSAGE, result.error)
+        })
         finish()
     }
 
+    // ── Torch ───────────────────────────────────────────────────────────────
+
+    private fun toggleTorch() {
+        torchEnabled = !torchEnabled
+        cameraControl?.enableTorch(torchEnabled)
+        btnTorch.text = if (torchEnabled) "💡 Torch ON" else "💡 Torch"
+    }
+
+    // ── Manual entry fallback ────────────────────────────────────────────────
+
+    private fun showManualEntryDialog() {
+        val input = EditText(this).apply {
+            hint = "Paste or type QR token"
+            setTextColor(0xFF000000.toInt())
+            setPadding(40, 24, 40, 24)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Enter QR Code Manually")
+            .setMessage("Paste the token from your approval email:")
+            .setView(input)
+            .setPositiveButton("Validate") { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isNotBlank()) {
+                    hasScanned = true
+                    handleQRToken(text)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // ── Animations & feedback ────────────────────────────────────────────────
+
     private fun startScanLineAnim() {
         ObjectAnimator.ofFloat(scanLine, "translationY", 0f, scanOverlay.height.toFloat()).apply {
-            duration      = 2000
-            repeatCount   = ValueAnimator.INFINITE
-            repeatMode    = ValueAnimator.REVERSE
-            interpolator  = LinearInterpolator()
+            duration     = 1800
+            repeatCount  = ValueAnimator.INFINITE
+            repeatMode   = ValueAnimator.REVERSE
+            interpolator = LinearInterpolator()
         }.start()
+    }
+
+    private fun flashScanFrame() {
+        runOnUiThread {
+            scanFlash.alpha = 0.8f
+            scanFlash.animate().alpha(0f).setDuration(500).start()
+        }
+    }
+
+    private fun vibrate() {
+        try {
+            val v = getSystemService(VIBRATOR_SERVICE) as Vibrator
+            v.vibrate(VibrationEffect.createOneShot(120, VibrationEffect.DEFAULT_AMPLITUDE))
+        } catch (_: Exception) {}
     }
 
     private fun startCountdown() {
@@ -259,23 +299,15 @@ class QRScanActivity : AppCompatActivity() {
             override fun run() {
                 if (hasScanned) return
                 tvCountdown.text = if (seconds > 0) "Auto-close in ${seconds}s" else ""
-                if (seconds <= 0) {
-                    if (!hasScanned) finish()
-                    return
-                }
+                if (seconds <= 0) { if (!hasScanned) finish(); return }
                 seconds--
                 countdownHandler.postDelayed(this, 1000)
             }
         })
     }
 
-    private fun updateInstruction(msg: String) {
-        runOnUiThread { tvInstruction.text = msg }
-    }
-
-    private fun updateStatus(msg: String) {
-        runOnUiThread { tvScanStatus.text = msg }
-    }
+    private fun updateInstruction(msg: String) = runOnUiThread { tvInstruction.text = msg }
+    private fun updateStatus(msg: String)      = runOnUiThread { tvScanStatus.text  = msg }
 
     override fun onDestroy() {
         super.onDestroy()

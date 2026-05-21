@@ -20,7 +20,7 @@
     <View
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#B3000000"
+        android:background="#99000000"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -29,15 +29,15 @@
     <!-- QR scan frame -->
     <View
         android:id="@+id/scanOverlay"
-        android:layout_width="260dp"
-        android:layout_height="260dp"
+        android:layout_width="280dp"
+        android:layout_height="280dp"
         android:background="@drawable/qr_scan_frame"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/bottomBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Animated red scan line (sits inside the frame area) -->
+    <!-- Animated scan line -->
     <View
         android:id="@+id/scanLine"
         android:layout_width="0dp"
@@ -47,6 +47,18 @@
         app:layout_constraintStart_toStartOf="@+id/scanOverlay"
         app:layout_constraintEnd_toEndOf="@+id/scanOverlay"
         app:layout_constraintTop_toTopOf="@+id/scanOverlay"/>
+
+    <!-- Corner flash overlay when QR detected -->
+    <View
+        android:id="@+id/scanFlash"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#3322C55E"
+        android:alpha="0"
+        app:layout_constraintTop_toTopOf="@+id/scanOverlay"
+        app:layout_constraintBottom_toBottomOf="@+id/scanOverlay"
+        app:layout_constraintStart_toStartOf="@+id/scanOverlay"
+        app:layout_constraintEnd_toEndOf="@+id/scanOverlay"/>
 
     <!-- Top bar -->
     <LinearLayout
@@ -98,8 +110,8 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
         android:background="#E6000000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -120,7 +132,35 @@
             android:textColor="#660000"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginTop="3dp"/>
+
+        <!-- Torch + Manual entry row -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnTorch"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="💡 Torch"
+                android:textSize="11sp"
+                android:textColor="#FF9999"
+                android:backgroundTint="#2a0000"
+                android:layout_marginEnd="12dp"/>
+
+            <Button
+                android:id="@+id/btnManualEntry"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="⌨ Enter Code"
+                android:textSize="11sp"
+                android:textColor="#FF9999"
+                android:backgroundTint="#2a0000"/>
+        </LinearLayout>
 
         <TextView
             android:text="Visitor Management System  ·  Powered by Temi"
@@ -129,7 +169,7 @@
             android:letterSpacing="0.04"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"/>
+            android:layout_marginTop="6dp"/>
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -23,11 +23,11 @@ object TemiManager {
         }
     }
 
-    fun speakWelcome() = speak("Welcome to Nanta Tech Limited! I am Temi, your visitor assistant. Please scan your QR code to check in.")
+    fun speakWelcome() = speak("Welcome to Nanta Tech Limited! I am Temi, your visitor assistant. Please enter your OTP to check in.")
 
-    fun speakScanPrompt() = speak("Please show your QR code to the camera. I will scan it for you.")
+    fun speakScanPrompt() = speak("Please enter your 6-digit OTP on the screen.")
 
-    fun speakValidating() = speak("Thank you. Please wait while I verify your QR code.")
+    fun speakValidating() = speak("Thank you. Please wait while I verify your OTP.")
 
     fun speakWelcomeVisitor(visitorName: String, hostName: String) =
         speak("Welcome, $visitorName! ${hostName} is expecting you. Please follow me to your destination.")
@@ -42,7 +42,12 @@ object TemiManager {
 
     fun speakWalkInWaiting(hostName: String) = speak("Thank you! I have notified $hostName of your arrival. Please wait for their approval.")
 
-    fun speakWalkInApproved() = speak("Great news! Your visit has been approved. Please scan the QR code on my screen to check in.")
+    fun speakWalkInApproved() = speak("Great news! Your visit has been approved. Your OTP has been sent to your email.")
+
+    fun speakOTPPrompt() = speak("Please enter your email address and the 6-digit OTP sent to your email.")
+
+    fun speakOTPSuccess(visitorName: String, destination: String) =
+        speak("Welcome $visitorName! Your OTP has been verified. I will escort you to $destination now.")
 
     fun speakWalkInTimeout() = speak("I'm sorry, the request has timed out. Please ask reception for assistance.")
 

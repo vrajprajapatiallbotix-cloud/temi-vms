@@ -9,18 +9,23 @@ const initializeSocket = (socketIo) => {
   io.on('connection', (socket) => {
     socket.on('join', ({ userId, role }) => {
       socket.join(`user:${userId}`);
-      if (role === 'admin') socket.join('admin');
+      if (['admin','org_admin','org_super_admin'].includes(role)) socket.join('admin');
       console.log(`Socket joined: user:${userId} (${role})`);
     });
 
-    socket.on('temi:join', ({ serial }) => {
+    socket.on('temi:join', ({ serial, organizationId }) => {
       socket.join(`temi:${serial}`);
+      if (organizationId) socket.join(`temi:${organizationId}`);
       console.log(`Temi joined: temi:${serial}`);
     });
 
-    // Kiosk joins a visit-specific room to receive QR when approved
     socket.on('visit:join', ({ visitId }) => {
       socket.join(`visit:${visitId}`);
+    });
+
+    // Kiosk joins org room to receive OTP approval events
+    socket.on('org:join', ({ organizationId }) => {
+      if (organizationId) socket.join(`org:${organizationId}`);
     });
 
     socket.on('disconnect', () => {
