@@ -23,15 +23,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dark via-primary-900 to-primary-700 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg,#fff7ed 0%,#ffedd5 50%,#fed7aa 100%)' }}>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-4 border border-white/20">
+          <div className="w-16 h-16 rounded-2xl bg-orange-500 shadow-lg flex items-center justify-center mx-auto mb-4">
             <Bot size={32} className="text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Temi VMS</h1>
-          <p className="text-primary-200 mt-1 text-sm">Visitor Management System</p>
+          <h1 className="text-3xl font-bold text-gray-900">Temi VMS</h1>
+          <p className="text-orange-600 mt-1 text-sm font-medium">Visitor Management System</p>
         </div>
 
         {/* Card */}
@@ -98,7 +98,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-primary-200 text-xs mt-6">
+        <p className="text-center text-orange-500 text-xs mt-6 font-medium">
           Powered by Nanta Tech Limited × Temi Robot
         </p>
       </div>
