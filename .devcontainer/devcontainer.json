@@ -2,14 +2,15 @@
   "name": "Temi VMS",
   "dockerComposeFile": "docker-compose.yml",
   "service": "app",
-  "workspaceFolder": "/workspaces/temi-vms",
+  "workspaceFolder": "/workspaces/temi-vms/temi-vms",
 
-  "postCreateCommand": "bash .devcontainer/init.sh",
+  "postCreateCommand": "bash /workspaces/temi-vms/temi-vms/.devcontainer/init.sh",
+  "postStartCommand": "bash /workspaces/temi-vms/temi-vms/.devcontainer/start.sh",
 
   "forwardPorts": [5000, 5173],
   "portsAttributes": {
-    "5000": { "label": "Backend API", "visibility": "public", "onAutoForward": "silent" },
-    "5173": { "label": "Frontend", "visibility": "public", "onAutoForward": "openBrowser" }
+    "5000": { "label": "Backend API",  "visibility": "public", "onAutoForward": "silent" },
+    "5173": { "label": "Frontend App", "visibility": "public", "onAutoForward": "openBrowser" }
   },
 
   "customizations": {

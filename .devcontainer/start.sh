@@ -1,23 +1,17 @@
 #!/bin/bash
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="/workspaces/temi-vms/temi-vms"
 
 echo "🚀 Starting Temi VMS..."
 
-cd "$ROOT/backend"
-node src/server.js &
-BACKEND_PID=$!
-sleep 2
+# Backend
+nohup node "$ROOT/backend/src/server.js" > /tmp/temi-backend.log 2>&1 &
+echo "✅ Backend started (log: /tmp/temi-backend.log)"
 
-cd "$ROOT/frontend"
-npm run dev &
-FRONTEND_PID=$!
+# Frontend — vite.config.js already has host:true so it binds 0.0.0.0
+cd "$ROOT/frontend" && nohup npm run dev > /tmp/temi-frontend.log 2>&1 &
+echo "✅ Frontend started (log: /tmp/temi-frontend.log)"
 
 echo ""
-echo "✅ Temi VMS is running!"
-echo "   → Go to PORTS tab, right-click port 5173 → Open in Browser"
-echo "   → Admin: admin@vms.com / Admin@123"
-echo "   → Kiosk: <url>/kiosk   Staff: <url>/login"
-echo ""
-echo "Press Ctrl+C to stop."
-trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" INT
-wait $BACKEND_PID $FRONTEND_PID
+echo "🌐 Frontend: https://${CODESPACE_NAME}-5173.app.github.dev"
+echo "   Admin:  admin@vms.com / Admin@123"
+echo "   Kiosk:  <url>/kiosk   |   Staff: <url>/login"
